@@ -1,8 +1,9 @@
 package com.contextable.agui4k.platform
 
-import io.ktor.client.engine.*
-import io.ktor.client.engine.darwin.*
-import platform.Foundation.*
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.darwin.Darwin
+import platform.Foundation.NSLog
+import platform.Foundation.NSProcessInfo
 import platform.UIKit.UIDevice
 
 /**
@@ -15,17 +16,17 @@ actual object Platform {
     actual val name: String = UIDevice.currentDevice.let {
         "${it.systemName()} ${it.systemVersion()}"
     }
-    
+
     /**
      * Returns the default HTTP client engine for iOS.
      */
     actual fun httpClientEngine(): HttpClientEngine = Darwin.create()
-    
+
     /**
      * Checks if the platform supports WebSockets.
      */
     actual val supportsWebSockets: Boolean = true
-    
+
     /**
      * Gets the number of available processors for concurrent operations.
      */
@@ -46,7 +47,7 @@ actual object PlatformLogger {
                 append(it.stackTraceToString())
             }
         }
-        
+
         NSLog("%@", logMessage)
     }
 }

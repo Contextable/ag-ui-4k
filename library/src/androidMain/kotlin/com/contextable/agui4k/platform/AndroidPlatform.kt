@@ -1,8 +1,8 @@
 package com.contextable.agui4k.platform
 
 import android.os.Build
-import io.ktor.client.engine.*
-import io.ktor.client.engine.android.*
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.android.Android
 
 /**
  * Android-specific platform implementations for ag-ui-4k.
@@ -12,17 +12,17 @@ actual object Platform {
      * Returns the platform name and version.
      */
     actual val name: String = "Android ${Build.VERSION.SDK_INT}"
-    
+
     /**
      * Returns the default HTTP client engine for Android.
      */
     actual fun httpClientEngine(): HttpClientEngine = Android.create()
-    
+
     /**
      * Checks if the platform supports WebSockets.
      */
     actual val supportsWebSockets: Boolean = true
-    
+
     /**
      * Gets the number of available processors for concurrent operations.
      */

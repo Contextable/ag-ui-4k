@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
 plugins {
     kotlin("multiplatform") version "2.1.21"
     kotlin("plugin.serialization") version "2.1.21"
-    id("com.android.library") version "8.2.2"
+    id("com.android.library") version "8.7.3"
     id("io.gitlab.arturbosch.detekt") version "1.23.4"
     id("maven-publish")
     id("signing")

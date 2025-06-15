@@ -1,7 +1,7 @@
 package com.contextable.agui4k.platform
 
-import io.ktor.client.engine.*
-import io.ktor.client.engine.java.*
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.java.Java
 import org.slf4j.LoggerFactory
 
 /**
@@ -12,17 +12,17 @@ actual object Platform {
      * Returns the platform name and version.
      */
     actual val name: String = "JVM ${System.getProperty("java.version")}"
-    
+
     /**
      * Returns the default HTTP client engine for JVM.
      */
     actual fun httpClientEngine(): HttpClientEngine = Java.create()
-    
+
     /**
      * Checks if the platform supports WebSockets.
      */
     actual val supportsWebSockets: Boolean = true
-    
+
     /**
      * Gets the number of available processors for concurrent operations.
      */
@@ -35,7 +35,7 @@ actual object Platform {
 actual object PlatformLogger {
     actual fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?) {
         val logger = LoggerFactory.getLogger(tag)
-        
+
         when (level) {
             LogLevel.DEBUG -> logger.debug(message, throwable)
             LogLevel.INFO -> logger.info(message, throwable)
