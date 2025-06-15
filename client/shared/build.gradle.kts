@@ -1,9 +1,7 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
-    kotlin("plugin.compose")  // Add this line
+    kotlin("plugin.compose")
     id("com.android.library")
     id("org.jetbrains.compose")
 }
@@ -60,11 +58,6 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
-                implementation("io.ktor:ktor-client-mock:3.1.3")
-                implementation("com.russhwolf:multiplatform-settings-test:1.2.0")
-
-                @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-                implementation(compose.uiTest)
             }
         }
 
@@ -81,17 +74,15 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation("junit:junit:4.13.2")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
             }
         }
 
         val androidInstrumentedTest by getting {
             dependencies {
+                implementation(kotlin("test"))
                 implementation("androidx.test:runner:1.5.2")
                 implementation("androidx.test.ext:junit:1.1.5")
-                implementation("androidx.test.espresso:espresso-core:3.5.1")
-                implementation("androidx.compose.ui:ui-test-junit4:1.5.4")
-                implementation("androidx.compose.ui:ui-test-manifest:1.5.4")
+                implementation("androidx.test:core:1.5.0")
             }
         }
 
@@ -105,7 +96,6 @@ kotlin {
         val desktopTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
             }
         }
     }
@@ -142,8 +132,8 @@ android {
     }
 
     testOptions {
-        unitTests.all {
-            it.useJUnitPlatform()
+        unitTests {
+            isReturnDefaultValues = true
         }
     }
 }

@@ -4,6 +4,7 @@ import androidx.compose.ui.test.*
 import com.contextable.agui4k.client.ui.screens.chat.DisplayMessage
 import com.contextable.agui4k.client.ui.screens.chat.MessageRole
 import com.contextable.agui4k.client.ui.screens.chat.components.MessageBubble
+import com.contextable.agui4k.client.ui.theme.AgentChatTheme
 import kotlin.test.Test
 
 @OptIn(ExperimentalTestApi::class)
@@ -18,7 +19,9 @@ class MessageBubbleTest {
         )
 
         setContent {
-            MessageBubble(message = message)
+            AgentChatTheme {
+                MessageBubble(message = message)
+            }
         }
 
         onNodeWithText("Hello, AI!").assertExists()
@@ -33,7 +36,9 @@ class MessageBubbleTest {
         )
 
         setContent {
-            MessageBubble(message = message)
+            AgentChatTheme {
+                MessageBubble(message = message)
+            }
         }
 
         onNodeWithText("Hello! How can I help you?").assertExists()
@@ -49,11 +54,13 @@ class MessageBubbleTest {
         )
 
         setContent {
-            MessageBubble(message = message)
+            AgentChatTheme {
+                MessageBubble(message = message)
+            }
         }
 
         onNodeWithText("Thinking").assertExists()
-        // Simplified test - just check that the text exists
-        // Progress indicator testing is more complex in Compose
+        // Note: Testing CircularProgressIndicator requires more complex UI testing
+        // For now, we just verify the text content exists
     }
 }

@@ -7,12 +7,13 @@ import kotlinx.serialization.decodeFromString
 import kotlin.test.*
 
 class SerializationTest {
-    
+
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
+        classDiscriminator = "type"
     }
-    
+
     @Test
     fun testAuthMethodSerialization() {
         val authMethods = listOf(
@@ -22,14 +23,20 @@ class SerializationTest {
             AuthMethod.BasicAuth("user", "pass"),
             AuthMethod.Custom("oauth", mapOf("client_id" to "123"))
         )
-        
+
         authMethods.forEach { original ->
-            val jsonString = json.encodeToString<AuthMethod>(original)
-            val decoded = json.decodeFromString<AuthMethod>(jsonString)
-            assertEquals(original, decoded)
+            try {
+                val jsonString = json.encodeToString(original)
+                val decoded = json.decodeFromString<AuthMethod>(jsonString)
+                assertEquals(original, decoded)
+            } catch (e: Exception) {
+                println("Failed to serialize/deserialize: $original")
+                println("Error: ${e.message}")
+                throw e
+            }
         }
     }
-    
+
     @Test
     fun testAgentConfigSerialization() {
         val agent = AgentConfig(
@@ -40,10 +47,10 @@ class SerializationTest {
             authMethod = AuthMethod.ApiKey("secret", "X-API-Key"),
             customHeaders = mapOf("X-Custom" to "value")
         )
-        
+
         val jsonString = json.encodeToString(agent)
         val decoded = json.decodeFromString<AgentConfig>(jsonString)
-        
+
         assertEquals(agent.id, decoded.id)
         assertEquals(agent.name, decoded.name)
         assertEquals(agent.url, decoded.url)
