@@ -39,7 +39,7 @@ data class RunAgentInput(
     val threadId: String,
     val runId: String,
     val state: JsonElement? = null,
-    val messages: List<Message> = emptyList(),
+    val messages: List<@Serializable(with = MessageSerializer::class) Message> = emptyList(),
     val tools: List<Tool> = emptyList(),
     val context: List<Context> = emptyList(),
     val forwardedProps: JsonElement? = null

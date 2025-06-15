@@ -105,7 +105,7 @@ class HttpAgent(
         ignoreUnknownKeys = true
         isLenient = true
         encodeDefaults = true
-        classDiscriminator = "type"
+        explicitNulls = false
     }
 
     private val httpClient = HttpClient {

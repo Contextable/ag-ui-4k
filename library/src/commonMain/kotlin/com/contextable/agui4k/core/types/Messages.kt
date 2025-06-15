@@ -12,16 +12,16 @@ import kotlinx.serialization.json.JsonElement
 enum class Role {
     @SerialName("developer")
     DEVELOPER,
-    
+
     @SerialName("system")
     SYSTEM,
-    
+
     @SerialName("assistant")
     ASSISTANT,
-    
+
     @SerialName("user")
     USER,
-    
+
     @SerialName("tool")
     TOOL
 }
@@ -30,7 +30,7 @@ enum class Role {
  * Base interface for all message types in the AG-UI protocol.
  */
 @OptIn(ExperimentalSerializationApi::class)
-@Serializable
+@Serializable(with = MessageSerializer::class)
 sealed interface Message {
     val id: String
     val role: Role
@@ -42,7 +42,6 @@ sealed interface Message {
  * Represents a message from a developer.
  */
 @Serializable
-@SerialName("developer")
 data class DeveloperMessage(
     override val id: String,
     override val role: Role = Role.DEVELOPER,
@@ -54,7 +53,6 @@ data class DeveloperMessage(
  * Represents a system message.
  */
 @Serializable
-@SerialName("system")
 data class SystemMessage(
     override val id: String,
     override val role: Role = Role.SYSTEM,
@@ -66,7 +64,6 @@ data class SystemMessage(
  * Represents a message from an assistant.
  */
 @Serializable
-@SerialName("assistant")
 data class AssistantMessage(
     override val id: String,
     override val role: Role = Role.ASSISTANT,
@@ -79,7 +76,6 @@ data class AssistantMessage(
  * Represents a message from a user.
  */
 @Serializable
-@SerialName("user")
 data class UserMessage(
     override val id: String,
     override val role: Role = Role.USER,
@@ -91,7 +87,6 @@ data class UserMessage(
  * Represents a message from a tool.
  */
 @Serializable
-@SerialName("tool")
 data class ToolMessage(
     override val id: String,
     override val role: Role = Role.TOOL,
