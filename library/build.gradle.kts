@@ -31,9 +31,9 @@ kotlin {
                 compilerOptions {
                     // Enable K2 compiler features
                     freeCompilerArgs.add("-Xexpect-actual-classes")
-                    freeCompilerArgs.add("-Xopt-in=kotlin.RequiresOptIn")
-                    freeCompilerArgs.add("-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
-                    freeCompilerArgs.add("-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi")
+                    freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+                    freeCompilerArgs.add("-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
+                    freeCompilerArgs.add("-opt-in=kotlinx.serialization.ExperimentalSerializationApi")
                     languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_1)
                     apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_1)
                 }
@@ -50,12 +50,7 @@ kotlin {
         }
         publishLibraryVariants("release")
     }
-    
-    // iOS targets
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-    
+
     // JVM target
     jvm {
         compilations.all {
@@ -67,6 +62,11 @@ kotlin {
             useJUnitPlatform()
         }
     }
+    
+    // iOS targets
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
     
     // JS target (future)
     // js(IR) {
