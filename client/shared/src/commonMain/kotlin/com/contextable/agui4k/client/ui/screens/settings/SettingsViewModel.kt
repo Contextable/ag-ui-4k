@@ -19,7 +19,7 @@ data class SettingsState(
 
 class SettingsViewModel : ScreenModel {
     private val settings = getPlatformSettings()
-    private val agentRepository = AgentRepository(settings)
+    private val agentRepository = AgentRepository.getInstance(settings)
     private val preferencesRepository = PreferencesRepository(settings)
     
     private val _state = MutableStateFlow(SettingsState())

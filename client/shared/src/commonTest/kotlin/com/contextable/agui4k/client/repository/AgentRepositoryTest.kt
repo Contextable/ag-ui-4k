@@ -11,11 +11,20 @@ class AgentRepositoryTest {
     
     private lateinit var settings: TestSettings
     private lateinit var repository: AgentRepository
-    
+
     @BeforeTest
     fun setup() {
+        // Reset the singleton instance to ensure clean state
+        AgentRepository.resetInstance()
+
         settings = TestSettings()
-        repository = AgentRepository(settings)
+        repository = AgentRepository.getInstance(settings)
+    }
+
+    @AfterTest
+    fun tearDown() {
+        // Clean up after each test
+        AgentRepository.resetInstance()
     }
     
     @Test

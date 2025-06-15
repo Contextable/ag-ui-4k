@@ -39,7 +39,7 @@ enum class MessageRole {
 
 class ChatViewModel : ScreenModel {
     private val settings = getPlatformSettings()
-    private val agentRepository = AgentRepository(settings)
+    private val agentRepository = AgentRepository.getInstance(settings)
     private val authManager = AuthManager()
     
     private val _state = MutableStateFlow(ChatState())

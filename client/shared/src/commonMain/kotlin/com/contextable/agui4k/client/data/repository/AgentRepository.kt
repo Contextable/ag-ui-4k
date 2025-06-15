@@ -13,8 +13,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
+import org.jetbrains.annotations.TestOnly
 
-class AgentRepository(
+class AgentRepository private constructor(
     private val settings: Settings
 ) {
     private val json = Json {
@@ -116,9 +117,27 @@ class AgentRepository(
         val agentsJson = json.encodeToString(_agents.value)
         settings.putString(KEY_AGENTS, agentsJson)
     }
+
+
     
     companion object {
         private const val KEY_AGENTS = "agents"
         private const val KEY_ACTIVE_AGENT = "active_agent"
+
+        @Volatile
+        private var INSTANCE: AgentRepository? = null
+
+        fun getInstance(settings: Settings): AgentRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: AgentRepository(settings).also { INSTANCE = it }
+            }
+        }
+
+        @TestOnly
+        fun resetInstance() {
+            synchronized(this) {
+                INSTANCE = null
+            }
+        }
     }
 }

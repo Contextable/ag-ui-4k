@@ -19,9 +19,18 @@ class ChatViewModelTest {
 
     @BeforeTest
     fun setup() {
+        // Reset singleton instances
+        AgentRepository.resetInstance()
+
         testSettings = TestSettings()
-        agentRepository = AgentRepository(testSettings)
+        agentRepository = AgentRepository.getInstance(testSettings)
         viewModel = TestChatViewModel()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        // Clean up
+        AgentRepository.resetInstance()
     }
 
     @Test
