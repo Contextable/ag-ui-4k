@@ -58,6 +58,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+                implementation("io.ktor:ktor-client-mock:3.1.3")  // Add this line
             }
         }
 
@@ -83,6 +84,12 @@ kotlin {
                 implementation("androidx.test:runner:1.5.2")
                 implementation("androidx.test.ext:junit:1.1.5")
                 implementation("androidx.test:core:1.5.0")
+
+                // Fixed Compose testing dependencies with explicit versions
+                implementation("androidx.compose.ui:ui-test-junit4:1.6.21")
+                implementation("androidx.compose.ui:ui-test-manifest:1.6.21")
+                implementation("androidx.activity:activity-compose:1.8.2")
+                implementation("androidx.compose.ui:ui-tooling:1.6.21")
             }
         }
 
