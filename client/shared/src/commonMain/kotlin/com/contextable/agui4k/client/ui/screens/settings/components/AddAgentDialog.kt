@@ -14,6 +14,17 @@ import androidx.compose.ui.unit.dp
 import com.contextable.agui4k.client.data.model.AgentConfig
 import com.contextable.agui4k.client.data.model.AuthMethod
 
+fun getAuthMethodLabel(authMethod: AuthMethod): String {
+    return when (authMethod) {
+        is AuthMethod.None -> "No Authentication"
+        is AuthMethod.ApiKey -> "API Key"
+        is AuthMethod.BearerToken -> "Bearer Token"
+        is AuthMethod.BasicAuth -> "Basic Auth"
+        is AuthMethod.OAuth2 -> "OAuth 2.0"
+        is AuthMethod.Custom -> "Custom"
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddAgentDialog(
@@ -21,18 +32,19 @@ fun AddAgentDialog(
     onDismiss: () -> Unit,
     onConfirm: (AgentConfig) -> Unit
 ) {
+    // ... rest of the composable code remains the same
     var name by remember { mutableStateOf(agent?.name ?: "") }
     var url by remember { mutableStateOf(agent?.url ?: "") }
     var description by remember { mutableStateOf(agent?.description ?: "") }
     var authMethod by remember { mutableStateOf(agent?.authMethod ?: AuthMethod.None()) }
-    
+
     var nameError by remember { mutableStateOf<String?>(null) }
     var urlError by remember { mutableStateOf<String?>(null) }
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { 
-            Text(if (agent != null) "Edit Agent" else "Add Agent") 
+        title = {
+            Text(if (agent != null) "Edit Agent" else "Add Agent")
         },
         text = {
             Column(
@@ -44,7 +56,7 @@ fun AddAgentDialog(
                 // Name field
                 OutlinedTextField(
                     value = name,
-                    onValueChange = { 
+                    onValueChange = {
                         name = it
                         nameError = null
                     },
@@ -55,11 +67,11 @@ fun AddAgentDialog(
                     supportingText = nameError?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 // URL field
                 OutlinedTextField(
                     value = url,
-                    onValueChange = { 
+                    onValueChange = {
                         url = it
                         urlError = null
                     },
@@ -70,7 +82,7 @@ fun AddAgentDialog(
                     supportingText = urlError?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 // Description field
                 OutlinedTextField(
                     value = description,
@@ -81,7 +93,7 @@ fun AddAgentDialog(
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 // Auth method section
                 AuthMethodSelector(
                     authMethod = authMethod,
@@ -94,12 +106,12 @@ fun AddAgentDialog(
                 onClick = {
                     // Validate inputs
                     var hasError = false
-                    
+
                     if (name.isBlank()) {
                         nameError = "Name is required"
                         hasError = true
                     }
-                    
+
                     if (url.isBlank()) {
                         urlError = "URL is required"
                         hasError = true
@@ -107,7 +119,7 @@ fun AddAgentDialog(
                         urlError = "URL must start with http:// or https://"
                         hasError = true
                     }
-                    
+
                     if (!hasError) {
                         val config = if (agent != null) {
                             agent.copy(
@@ -146,8 +158,9 @@ private fun AuthMethodSelector(
     authMethod: AuthMethod,
     onAuthMethodChange: (AuthMethod) -> Unit
 ) {
+    // ... rest of the AuthMethodSelector code remains the same
     var expanded by remember { mutableStateOf(false) }
-    
+
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -155,7 +168,7 @@ private fun AuthMethodSelector(
             text = "Authentication",
             style = MaterialTheme.typography.labelLarge
         )
-        
+
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = it }
@@ -169,7 +182,7 @@ private fun AuthMethodSelector(
                     .fillMaxWidth()
                     .menuAnchor()
             )
-            
+
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
@@ -204,16 +217,16 @@ private fun AuthMethodSelector(
                 )
             }
         }
-        
+
         // Auth method specific fields
         when (authMethod) {
             is AuthMethod.ApiKey -> {
                 var apiKey by remember(authMethod) { mutableStateOf(authMethod.key) }
                 var headerName by remember(authMethod) { mutableStateOf(authMethod.headerName) }
-                
+
                 OutlinedTextField(
                     value = apiKey,
-                    onValueChange = { 
+                    onValueChange = {
                         apiKey = it
                         onAuthMethodChange(authMethod.copy(key = it))
                     },
@@ -222,10 +235,10 @@ private fun AuthMethodSelector(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 OutlinedTextField(
                     value = headerName,
-                    onValueChange = { 
+                    onValueChange = {
                         headerName = it
                         onAuthMethodChange(authMethod.copy(headerName = it))
                     },
@@ -235,13 +248,13 @@ private fun AuthMethodSelector(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            
+
             is AuthMethod.BearerToken -> {
                 var token by remember(authMethod) { mutableStateOf(authMethod.token) }
-                
+
                 OutlinedTextField(
                     value = token,
-                    onValueChange = { 
+                    onValueChange = {
                         token = it
                         onAuthMethodChange(authMethod.copy(token = it))
                     },
@@ -251,14 +264,14 @@ private fun AuthMethodSelector(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            
+
             is AuthMethod.BasicAuth -> {
                 var username by remember(authMethod) { mutableStateOf(authMethod.username) }
                 var password by remember(authMethod) { mutableStateOf(authMethod.password) }
-                
+
                 OutlinedTextField(
                     value = username,
-                    onValueChange = { 
+                    onValueChange = {
                         username = it
                         onAuthMethodChange(authMethod.copy(username = it))
                     },
@@ -266,10 +279,10 @@ private fun AuthMethodSelector(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 OutlinedTextField(
                     value = password,
-                    onValueChange = { 
+                    onValueChange = {
                         password = it
                         onAuthMethodChange(authMethod.copy(password = it))
                     },
@@ -279,7 +292,7 @@ private fun AuthMethodSelector(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            
+
             else -> {
                 // No additional fields for None or other auth methods
             }

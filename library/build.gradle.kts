@@ -18,12 +18,6 @@ repositories {
 }
 
 kotlin {
-    // Configure source directory
-    sourceSets.all {
-        kotlin.srcDir("src/$name/kotlin")
-        resources.srcDir("src/$name/resources")
-    }
-    
     // Configure K2 compiler options
     targets.configureEach {
         compilations.configureEach {
@@ -160,23 +154,20 @@ android {
 // Publishing configuration
 publishing {
     publications {
-        create<MavenPublication>("maven") {
-            groupId = project.group.toString()
-            artifactId = "ag-ui-4k"
-            version = project.version.toString()
-            
+        withType<MavenPublication> {
+            // Configure all publications
             pom {
                 name.set("ag-ui-4k")
                 description.set("Kotlin Multiplatform implementation of the Agent User Interaction Protocol")
                 url.set("https://github.com/contextable/ag-ui-4k")
-                
+
                 licenses {
                     license {
                         name.set("MIT License")
                         url.set("https://opensource.org/licenses/MIT")
                     }
                 }
-                
+
                 developers {
                     developer {
                         id.set("contextable")
@@ -184,7 +175,7 @@ publishing {
                         email.set("dev@contextable.com")
                     }
                 }
-                
+
                 scm {
                     url.set("https://github.com/contextable/ag-ui-4k")
                     connection.set("scm:git:git://github.com/contextable/ag-ui-4k.git")

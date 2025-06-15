@@ -23,7 +23,7 @@ fun AgentCard(
     onDelete: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = if (isActive) {
@@ -53,7 +53,7 @@ fun AgentCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    
+
                     Text(
                         text = agent.url,
                         style = MaterialTheme.typography.bodySmall,
@@ -61,7 +61,7 @@ fun AgentCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    
+
                     agent.description?.let { desc ->
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -72,9 +72,9 @@ fun AgentCard(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -96,7 +96,7 @@ fun AgentCard(
                                 )
                             }
                         )
-                        
+
                         // Last used
                         agent.lastUsedAt?.let { lastUsed ->
                             Text(
@@ -107,7 +107,7 @@ fun AgentCard(
                         }
                     }
                 }
-                
+
                 if (isActive) {
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
@@ -117,9 +117,9 @@ fun AgentCard(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
@@ -132,7 +132,7 @@ fun AgentCard(
                         Text("Activate")
                     }
                 }
-                
+
                 TextButton(
                     onClick = onEdit
                 ) {
@@ -144,7 +144,7 @@ fun AgentCard(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Edit")
                 }
-                
+
                 TextButton(
                     onClick = { showDeleteDialog = true },
                     colors = ButtonDefaults.textButtonColors(
@@ -162,7 +162,7 @@ fun AgentCard(
             }
         }
     }
-    
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -190,24 +190,16 @@ fun AgentCard(
     }
 }
 
-private fun getAuthMethodLabel(authMethod: AuthMethod): String {
-    return when (authMethod) {
-        is AuthMethod.None -> "No Auth"
-        is AuthMethod.ApiKey -> "API Key"
-        is AuthMethod.BearerToken -> "Bearer Token"
-        is AuthMethod.BasicAuth -> "Basic Auth"
-        is AuthMethod.OAuth2 -> "OAuth 2.0"
-        is AuthMethod.Custom -> "Custom"
-    }
-}
+// DO NOT DUPLICATE THIS FUNCTION - IT'S ALREADY IN AddAgentDialog.kt
+// Just use the one from AddAgentDialog.kt
 
 private fun getAuthMethodIcon(authMethod: AuthMethod): androidx.compose.ui.graphics.vector.ImageVector {
     return when (authMethod) {
         is AuthMethod.None -> Icons.Default.Lock
-        is AuthMethod.ApiKey -> Icons.Default.Key
-        is AuthMethod.BearerToken -> Icons.Default.Token
+        is AuthMethod.ApiKey -> Icons.Default.Lock
+        is AuthMethod.BearerToken -> Icons.Default.Lock
         is AuthMethod.BasicAuth -> Icons.Default.Person
-        is AuthMethod.OAuth2 -> Icons.Default.Security
+        is AuthMethod.OAuth2 -> Icons.Default.AccountCircle
         is AuthMethod.Custom -> Icons.Default.Settings
     }
 }
@@ -216,7 +208,3 @@ private fun formatDateTime(instant: kotlinx.datetime.Instant): String {
     val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
     return "${localDateTime.date} ${localDateTime.hour.toString().padStart(2, '0')}:${localDateTime.minute.toString().padStart(2, '0')}"
 }
-
-// Material3 doesn't have Token icon, so we'll create a simple one
-private val Icons.Default.Token: androidx.compose.ui.graphics.vector.ImageVector
-    get() = Icons.Default.VpnKey

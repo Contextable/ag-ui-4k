@@ -3,6 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
+    kotlin("plugin.compose")  // Add this line
     id("com.android.library")
     id("org.jetbrains.compose")
 }
@@ -15,20 +16,9 @@ kotlin {
             }
         }
     }
-    
+
     jvm("desktop")
-    
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "shared"
-            isStatic = true
-        }
-    }
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -39,45 +29,45 @@ kotlin {
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.components.resources)
                 implementation(compose.components.uiToolingPreview)
-                
+
                 // ag-ui-4k library
                 implementation("com.contextable:ag-ui-4k:0.1.0")
-                
+
                 // Navigation
-                implementation("cafe.adriel.voyager:voyager-navigator:1.1.0")
-                implementation("cafe.adriel.voyager:voyager-screenmodel:1.1.0")
-                implementation("cafe.adriel.voyager:voyager-transitions:1.1.0")
-                
+                implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")
+                implementation("cafe.adriel.voyager:voyager-screenmodel:1.0.0")
+                implementation("cafe.adriel.voyager:voyager-transitions:1.0.0")
+
                 // Coroutines
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-                
+
                 // Serialization
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
-                
+
                 // Preferences
                 implementation("com.russhwolf:multiplatform-settings:1.2.0")
                 implementation("com.russhwolf:multiplatform-settings-coroutines:1.2.0")
-                
+
                 // Logging
                 implementation("io.github.microutils:kotlin-logging:3.0.5")
-                
+
                 // DateTime
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
                 implementation("io.ktor:ktor-client-mock:3.1.3")
                 implementation("com.russhwolf:multiplatform-settings-test:1.2.0")
-                
+
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.uiTest)
             }
         }
-        
+
         val androidMain by getting {
             dependencies {
                 api("androidx.activity:activity-compose:1.8.2")
@@ -86,7 +76,7 @@ kotlin {
                 implementation("org.slf4j:slf4j-android:1.7.36")
             }
         }
-        
+
         val androidUnitTest by getting {
             dependencies {
                 implementation(kotlin("test"))
@@ -94,7 +84,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
             }
         }
-        
+
         val androidInstrumentedTest by getting {
             dependencies {
                 implementation("androidx.test:runner:1.5.2")
@@ -104,24 +94,14 @@ kotlin {
                 implementation("androidx.compose.ui:ui-test-manifest:1.5.4")
             }
         }
-        
-        val iosX64Main by getting
-        val iosArm64Main by getting
-        val iosSimulatorArm64Main by getting
-        val iosMain by creating {
-            dependsOn(commonMain)
-            iosX64Main.dependsOn(this)
-            iosArm64Main.dependsOn(this)
-            iosSimulatorArm64Main.dependsOn(this)
-        }
-        
+
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation("org.slf4j:slf4j-simple:2.0.9")
             }
         }
-        
+
         val desktopTest by getting {
             dependencies {
                 implementation(kotlin("test"))
@@ -134,33 +114,33 @@ kotlin {
 android {
     namespace = "com.contextable.agui4k.client"
     compileSdk = 34
-    
+
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     sourceSets["main"].res.srcDirs("src/androidMain/res")
     sourceSets["main"].resources.srcDirs("src/commonMain/resources")
-    
+
     defaultConfig {
-        minSdk = 24
+        minSdk = 26
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-    
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
         }
     }
-    
+
     testOptions {
         unitTests.all {
             it.useJUnitPlatform()

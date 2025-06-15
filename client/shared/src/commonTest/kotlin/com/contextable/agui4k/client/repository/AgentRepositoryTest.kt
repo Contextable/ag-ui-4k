@@ -3,18 +3,18 @@ package com.contextable.agui4k.client.repository
 import com.contextable.agui4k.client.data.model.AgentConfig
 import com.contextable.agui4k.client.data.model.AuthMethod
 import com.contextable.agui4k.client.data.repository.AgentRepository
-import com.russhwolf.settings.MockSettings
+import com.contextable.agui4k.client.test.TestSettings
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
 class AgentRepositoryTest {
     
-    private lateinit var settings: MockSettings
+    private lateinit var settings: TestSettings
     private lateinit var repository: AgentRepository
     
     @BeforeTest
     fun setup() {
-        settings = MockSettings()
+        settings = TestSettings()
         repository = AgentRepository(settings)
     }
     

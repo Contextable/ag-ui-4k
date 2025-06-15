@@ -17,21 +17,20 @@ import kotlinx.serialization.decodeFromString
 class AgentRepository(
     private val settings: Settings
 ) {
-    private val flowSettings: FlowSettings = settings.toFlowSettings()
-    private val json = Json { 
+    private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
     }
-    
+
     private val _agents = MutableStateFlow<List<AgentConfig>>(emptyList())
     val agents: StateFlow<List<AgentConfig>> = _agents.asStateFlow()
-    
+
     private val _activeAgent = MutableStateFlow<AgentConfig?>(null)
     val activeAgent: StateFlow<AgentConfig?> = _activeAgent.asStateFlow()
-    
+
     private val _currentSession = MutableStateFlow<ChatSession?>(null)
     val currentSession: StateFlow<ChatSession?> = _currentSession.asStateFlow()
-    
+
     init {
         loadAgents()
         loadActiveAgent()

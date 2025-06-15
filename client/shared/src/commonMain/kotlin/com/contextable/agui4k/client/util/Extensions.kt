@@ -21,8 +21,15 @@ fun <T> StateFlow<T>.collectAsStateWithLifecycle(
 fun Long.formatFileSize(): String {
     if (this <= 0) return "0 B"
     val units = arrayOf("B", "KB", "MB", "GB", "TB")
-    val digitGroups = (kotlin.math.log10(this.toDouble()) / kotlin.math.log10(1024.0)).toInt()
-    return "%.1f %s".format(this / kotlin.math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
+    var size = this.toDouble()
+    var unitIndex = 0
+
+    while (size >= 1024 && unitIndex < units.size - 1) {
+        size /= 1024
+        unitIndex++
+    }
+
+    return "%.1f %s".format(size, units[unitIndex])
 }
 
 /**
