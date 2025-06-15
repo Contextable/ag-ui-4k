@@ -1,11 +1,17 @@
 package com.contextable.agui4k.core.protocol
 
+import kotlinx.serialization.Serializable
+
 /**
  * Enum defining all possible event types in the AG-UI protocol.
  * 
  * With K2 compiler optimizations, enum exhaustiveness checking is improved,
  * providing better compile-time safety for when expressions.
  */
+/**
+ * Enum defining all possible event types in the AG-UI protocol.
+ */
+@Serializable
 enum class EventType {
     // Text Message Events
     TEXT_MESSAGE_START,

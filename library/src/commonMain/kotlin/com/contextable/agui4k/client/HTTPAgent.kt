@@ -2,6 +2,7 @@ package com.contextable.agui4k.client
 
 import com.contextable.agui4k.core.agent.AbstractAgent
 import com.contextable.agui4k.core.agent.AgentConfig
+import com.contextable.agui4k.core.serialization.AgUiJson
 import com.contextable.agui4k.core.types.BaseEvent
 import com.contextable.agui4k.core.types.Message
 import com.contextable.agui4k.core.types.RunAgentInput
@@ -101,12 +102,7 @@ class HttpAgent(
     private val config: HttpAgentConfig
 ) : AbstractAgent(config) {
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        encodeDefaults = true
-        explicitNulls = false
-    }
+    private val json = AgUiJson
 
     private val httpClient = HttpClient {
         install(ContentNegotiation) {

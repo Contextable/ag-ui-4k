@@ -1,6 +1,7 @@
 package com.contextable.agui4k.tests
 
 import com.contextable.agui4k.core.protocol.EventType
+import com.contextable.agui4k.core.serialization.AgUiJson
 import com.contextable.agui4k.core.types.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
@@ -31,8 +32,10 @@ class EventSerializationTest {
         val jsonString = json.encodeToString<BaseEvent>(event)
         val jsonObj = json.parseToJsonElement(jsonString).jsonObject
 
-        // Verify protocol compliance
+        // The discriminator shows up as "type" in JSON
         assertEquals("RUN_STARTED", jsonObj["type"]?.jsonPrimitive?.content)
+
+        // But it's NOT the type property - verify other fields
         assertEquals("thread_123", jsonObj["threadId"]?.jsonPrimitive?.content)
         assertEquals("run_456", jsonObj["runId"]?.jsonPrimitive?.content)
         assertEquals(1234567890L, jsonObj["timestamp"]?.jsonPrimitive?.longOrNull)
@@ -41,6 +44,36 @@ class EventSerializationTest {
         val decoded = json.decodeFromString<BaseEvent>(jsonString)
         assertTrue(decoded is RunStartedEvent)
         assertEquals(event, decoded)
+
+        // Verify the type property is correctly set after deserialization
+        assertEquals(EventType.RUN_STARTED, decoded.type)
+    }
+
+    @Test
+    fun testTypeFieldNotSerialized() {
+        val event = RunStartedEvent(
+            threadId = "test",
+            runId = "test"
+        )
+
+        // Serialize as concrete type to check raw output
+        val concreteJson = Json {
+            encodeDefaults = true
+            explicitNulls = false
+        }
+
+        val jsonString = concreteJson.encodeToString(event)
+        val jsonObj = concreteJson.parseToJsonElement(jsonString).jsonObject
+
+        // The raw event should NOT have a "type" field when serialized as concrete type
+        assertFalse(jsonObj.containsKey("type"), "type field should not be serialized")
+
+        // But when serialized polymorphically, it should have discriminator
+        val polyJsonString = json.encodeToString<BaseEvent>(event)
+        val polyJsonObj = json.parseToJsonElement(polyJsonString).jsonObject
+
+        // The discriminator "type" should be present
+        assertEquals("RUN_STARTED", polyJsonObj["type"]?.jsonPrimitive?.content)
     }
 
     @Test

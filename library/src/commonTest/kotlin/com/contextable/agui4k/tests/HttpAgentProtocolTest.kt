@@ -3,6 +3,7 @@ package com.contextable.agui4k.tests
 import com.contextable.agui4k.client.HttpAgent
 import com.contextable.agui4k.client.HttpAgentConfig
 import com.contextable.agui4k.client.HttpAgentException
+import com.contextable.agui4k.core.serialization.AgUiJson
 import com.contextable.agui4k.core.types.*
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
