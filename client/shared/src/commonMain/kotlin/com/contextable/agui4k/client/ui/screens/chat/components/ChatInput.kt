@@ -6,7 +6,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +21,7 @@ fun ChatInput(
     modifier: Modifier = Modifier
 ) {
     var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
-    
+
     Surface(
         modifier = modifier,
         shadowElevation = 8.dp
@@ -56,10 +55,10 @@ fun ChatInput(
                         }
                     }
                 ),
-                maxLines = 4,
+                singleLine = true, // This ensures Enter sends the message
                 shape = RoundedCornerShape(24.dp)
             )
-            
+
             FloatingActionButton(
                 onClick = {
                     if (textFieldValue.text.isNotBlank()) {
