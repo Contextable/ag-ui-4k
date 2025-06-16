@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
@@ -26,9 +25,9 @@ class SettingsScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = rememberScreenModel { SettingsViewModel() }
         val state by viewModel.state.collectAsState()
-        
+
         var showAddDialog by remember { mutableStateOf(false) }
-        
+
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -61,30 +60,7 @@ class SettingsScreen : Screen {
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // App Settings Section
-                item {
-                    SettingsSection(title = "Appearance") {
-                        SwitchPreference(
-                            title = "Dark Mode",
-                            subtitle = "Use dark theme",
-                            checked = state.isDarkMode,
-                            onCheckedChange = { viewModel.toggleDarkMode() }
-                        )
-                        
-                        SwitchPreference(
-                            title = "Show Timestamps",
-                            subtitle = "Display message timestamps",
-                            checked = state.showTimestamps,
-                            onCheckedChange = { viewModel.toggleTimestamps() }
-                        )
-                    }
-                }
-                
-                item { 
-                    Spacer(modifier = Modifier.height(16.dp)) 
-                }
-                
-                // Agents Section
+                // Agents Section Header
                 item {
                     Text(
                         text = "Agents",
@@ -92,7 +68,7 @@ class SettingsScreen : Screen {
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
-                
+
                 if (state.agents.isEmpty()) {
                     item {
                         EmptyAgentsCard(
@@ -115,7 +91,7 @@ class SettingsScreen : Screen {
                 }
             }
         }
-        
+
         if (showAddDialog) {
             AddAgentDialog(
                 onDismiss = { showAddDialog = false },
@@ -125,7 +101,7 @@ class SettingsScreen : Screen {
                 }
             )
         }
-        
+
         state.editingAgent?.let { agent ->
             AddAgentDialog(
                 agent = agent,
@@ -135,65 +111,6 @@ class SettingsScreen : Screen {
                 }
             )
         }
-    }
-}
-
-@Composable
-private fun SettingsSection(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            content()
-        }
-    }
-}
-
-@Composable
-private fun SwitchPreference(
-    title: String,
-    subtitle: String? = null,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            subtitle?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
     }
 }
 
@@ -219,23 +136,23 @@ private fun EmptyAgentsCard(
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = "No agents configured",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             Text(
                 text = "Add an agent to start chatting",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Button(onClick = onAddClick) {
                 Icon(
                     imageVector = Icons.Default.Add,

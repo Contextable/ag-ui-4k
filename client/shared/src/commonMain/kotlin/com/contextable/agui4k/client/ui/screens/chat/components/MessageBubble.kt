@@ -8,12 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.contextable.agui4k.client.ui.screens.chat.DisplayMessage
 import com.contextable.agui4k.client.ui.screens.chat.MessageRole
-import com.contextable.agui4k.client.ui.theme.*
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -21,14 +19,14 @@ import kotlinx.datetime.toLocalDateTime
 @Composable
 fun MessageBubble(
     message: DisplayMessage,
-    showTimestamp: Boolean = true
+    modifier: Modifier = Modifier
 ) {
     val isUser = message.role == MessageRole.USER
     val isError = message.role == MessageRole.ERROR
     val isSystem = message.role == MessageRole.SYSTEM
-    
+
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
@@ -91,8 +89,9 @@ fun MessageBubble(
                     }
                 )
             }
-            
-            if (showTimestamp && !message.isStreaming) {
+
+            // Always show timestamp when message is complete
+            if (!message.isStreaming) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = formatTimestamp(message.timestamp),

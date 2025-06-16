@@ -1,13 +1,4 @@
-## Project Structure
-
-The project is organized with the main library code and build infrastructure in the `library` directory:
-
-- `/library` - Main library module with all source code and build files
-- `/docs` - Documentation and guides
-- `/examples` - Example applications (coming soon)
-- `/.github` - GitHub Actions CI/CD configuration
-
-All development work happens in the `library` directory. See the [library README](library/README.md) for detailed build instructions.# ag-ui-4k - AG-UI Protocol Client for Kotlin Multiplatform
+# ag-ui-4k - AG-UI Protocol Client for Kotlin Multiplatform
 
 A Kotlin Multiplatform (KMP) client library for connecting to AI agents that implement the Agent User Interaction Protocol (AG-UI).
 
@@ -123,6 +114,17 @@ scope.launch {
     }
 }
 ```
+
+## Project Structure
+
+The project is organized with the main library code and build infrastructure in the `library` directory:
+
+- `/library` - Main library module with all source code and build files
+- `/docs` - Documentation and guides
+- `/examples` - Example applications (coming soon)
+- `/.github` - GitHub Actions CI/CD configuration
+
+All development work happens in the `library` directory. See the [library README](library/README.md) for detailed build instructions.
 
 ## Architecture
 

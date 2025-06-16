@@ -20,7 +20,7 @@ fun MessageList(
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-    
+
     // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -29,7 +29,7 @@ fun MessageList(
             }
         }
     }
-    
+
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
@@ -40,12 +40,9 @@ fun MessageList(
             items = messages,
             key = { it.id }
         ) { message ->
-            MessageBubble(
-                message = message,
-                showTimestamp = true
-            )
+            MessageBubble(message = message)
         }
-        
+
         if (isLoading && messages.none { it.isStreaming }) {
             item {
                 Box(

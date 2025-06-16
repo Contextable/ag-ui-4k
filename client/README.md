@@ -9,7 +9,6 @@ A Compose Multiplatform chat client for connecting to AI agents using the AG-UI 
 - 🌍 **Cross-Platform**: Runs on Android, iOS, and Desktop (JVM)
 - 🤖 **Multi-Agent Support**: Add and manage multiple AI agents
 - 💬 **Real-time Streaming**: See AI responses character-by-character
-- 🌓 **Dark Mode**: Automatic theme switching based on system preferences
 - ⚙️ **Settings Management**: Persistent storage of agent configurations
 
 ## Architecture
