@@ -24,7 +24,6 @@ kotlin {
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
-                @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.components.resources)
                 implementation(compose.components.uiToolingPreview)
 
@@ -144,4 +143,10 @@ android {
             isReturnDefaultValues = true
         }
     }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "agui4kclient.shared.generated.resources"
+    generateResClass = auto
 }

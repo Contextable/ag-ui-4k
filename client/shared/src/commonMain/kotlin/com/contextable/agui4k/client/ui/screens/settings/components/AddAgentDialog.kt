@@ -3,20 +3,20 @@ package com.contextable.agui4k.client.ui.screens.settings.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.contextable.agui4k.client.data.model.AgentConfig
 import com.contextable.agui4k.client.data.model.AuthMethod
+import org.jetbrains.compose.resources.stringResource
+import agui4kclient.shared.generated.resources.*
+import com.contextable.agui4k.client.util.Strings
 
 fun getAuthMethodLabel(authMethod: AuthMethod): String {
     return when (authMethod) {
-        is AuthMethod.None -> "No Authentication"
+        is AuthMethod.None -> "No Authentication" // Will be replaced with string resource
         is AuthMethod.ApiKey -> "API Key"
         is AuthMethod.BearerToken -> "Bearer Token"
         is AuthMethod.BasicAuth -> "Basic Auth"
@@ -32,7 +32,6 @@ fun AddAgentDialog(
     onDismiss: () -> Unit,
     onConfirm: (AgentConfig) -> Unit
 ) {
-    // ... rest of the composable code remains the same
     var name by remember { mutableStateOf(agent?.name ?: "") }
     var url by remember { mutableStateOf(agent?.url ?: "") }
     var description by remember { mutableStateOf(agent?.description ?: "") }
@@ -44,7 +43,7 @@ fun AddAgentDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(if (agent != null) "Edit Agent" else "Add Agent")
+            Text(if (agent != null) stringResource(Res.string.edit_agent) else stringResource(Res.string.add_agent))
         },
         text = {
             Column(
@@ -60,8 +59,8 @@ fun AddAgentDialog(
                         name = it
                         nameError = null
                     },
-                    label = { Text("Name") },
-                    placeholder = { Text("My Agent") },
+                    label = { Text(stringResource(Res.string.agent_name)) },
+                    placeholder = { Text(stringResource(Res.string.agent_name_hint)) },
                     singleLine = true,
                     isError = nameError != null,
                     supportingText = nameError?.let { { Text(it) } },
@@ -75,8 +74,8 @@ fun AddAgentDialog(
                         url = it
                         urlError = null
                     },
-                    label = { Text("URL") },
-                    placeholder = { Text("https://api.example.com/agent") },
+                    label = { Text(stringResource(Res.string.agent_url)) },
+                    placeholder = { Text(stringResource(Res.string.agent_url_hint)) },
                     singleLine = true,
                     isError = urlError != null,
                     supportingText = urlError?.let { { Text(it) } },
@@ -87,8 +86,8 @@ fun AddAgentDialog(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Description (optional)") },
-                    placeholder = { Text("A brief description of this agent") },
+                    label = { Text(stringResource(Res.string.agent_description)) },
+                    placeholder = { Text(stringResource(Res.string.agent_description_hint)) },
                     minLines = 2,
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
@@ -108,15 +107,15 @@ fun AddAgentDialog(
                     var hasError = false
 
                     if (name.isBlank()) {
-                        nameError = "Name is required"
+                        nameError = Strings.NAME_REQUIRED
                         hasError = true
                     }
 
                     if (url.isBlank()) {
-                        urlError = "URL is required"
+                        urlError = Strings.URL_REQUIRED
                         hasError = true
                     } else if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                        urlError = "URL must start with http:// or https://"
+                        urlError = Strings.URL_INVALID
                         hasError = true
                     }
 
@@ -141,12 +140,12 @@ fun AddAgentDialog(
                     }
                 }
             ) {
-                Text(if (agent != null) "Save" else "Add")
+                Text(if (agent != null) stringResource(Res.string.save) else stringResource(Res.string.add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.cancel))
             }
         }
     )
@@ -158,14 +157,13 @@ private fun AuthMethodSelector(
     authMethod: AuthMethod,
     onAuthMethodChange: (AuthMethod) -> Unit
 ) {
-    // ... rest of the AuthMethodSelector code remains the same
     var expanded by remember { mutableStateOf(false) }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "Authentication",
+            text = stringResource(Res.string.authentication),
             style = MaterialTheme.typography.labelLarge
         )
 
@@ -188,28 +186,28 @@ private fun AuthMethodSelector(
                 onDismissRequest = { expanded = false }
             ) {
                 DropdownMenuItem(
-                    text = { Text("No Authentication") },
+                    text = { Text(stringResource(Res.string.auth_none)) },
                     onClick = {
                         onAuthMethodChange(AuthMethod.None())
                         expanded = false
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("API Key") },
+                    text = { Text(stringResource(Res.string.auth_api_key)) },
                     onClick = {
                         onAuthMethodChange(AuthMethod.ApiKey("", "X-API-Key"))
                         expanded = false
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("Bearer Token") },
+                    text = { Text(stringResource(Res.string.auth_bearer_token)) },
                     onClick = {
                         onAuthMethodChange(AuthMethod.BearerToken(""))
                         expanded = false
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("Basic Auth") },
+                    text = { Text(stringResource(Res.string.auth_basic)) },
                     onClick = {
                         onAuthMethodChange(AuthMethod.BasicAuth("", ""))
                         expanded = false
@@ -230,7 +228,7 @@ private fun AuthMethodSelector(
                         apiKey = it
                         onAuthMethodChange(authMethod.copy(key = it))
                     },
-                    label = { Text("API Key") },
+                    label = { Text(stringResource(Res.string.auth_api_key)) },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -242,8 +240,8 @@ private fun AuthMethodSelector(
                         headerName = it
                         onAuthMethodChange(authMethod.copy(headerName = it))
                     },
-                    label = { Text("Header Name") },
-                    placeholder = { Text("X-API-Key") },
+                    label = { Text(stringResource(Res.string.header_name)) },
+                    placeholder = { Text(stringResource(Res.string.header_name_hint)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -258,7 +256,7 @@ private fun AuthMethodSelector(
                         token = it
                         onAuthMethodChange(authMethod.copy(token = it))
                     },
-                    label = { Text("Bearer Token") },
+                    label = { Text(stringResource(Res.string.auth_bearer_token)) },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -275,7 +273,7 @@ private fun AuthMethodSelector(
                         username = it
                         onAuthMethodChange(authMethod.copy(username = it))
                     },
-                    label = { Text("Username") },
+                    label = { Text(stringResource(Res.string.username)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -286,7 +284,7 @@ private fun AuthMethodSelector(
                         password = it
                         onAuthMethodChange(authMethod.copy(password = it))
                     },
-                    label = { Text("Password") },
+                    label = { Text(stringResource(Res.string.password)) },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()

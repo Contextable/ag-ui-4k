@@ -15,6 +15,8 @@ import com.contextable.agui4k.client.ui.screens.chat.components.ChatHeader
 import com.contextable.agui4k.client.ui.screens.chat.components.ChatInput
 import com.contextable.agui4k.client.ui.screens.chat.components.MessageList
 import com.contextable.agui4k.client.ui.screens.settings.SettingsScreen
+import org.jetbrains.compose.resources.stringResource
+import agui4kclient.shared.generated.resources.*
 
 class ChatScreen : Screen {
     @Composable
@@ -22,11 +24,11 @@ class ChatScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = rememberScreenModel { ChatViewModel() }
         val state by viewModel.state.collectAsState()
-        
+
         Scaffold(
             topBar = {
                 ChatHeader(
-                    agentName = state.activeAgent?.name ?: "No Agent Selected",
+                    agentName = state.activeAgent?.name ?: stringResource(Res.string.no_agent_selected),
                     isConnected = state.isConnected,
                     onSettingsClick = {
                         navigator.push(SettingsScreen())
@@ -79,26 +81,26 @@ private fun NoAgentSelected(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "No Agent Selected",
+            text = stringResource(Res.string.no_agent_selected),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
-            text = "Please go to settings and add or select an agent to start chatting.",
+            text = stringResource(Res.string.no_agent_selected_description),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         Button(
             onClick = onGoToSettings
         ) {
-            Text("Go to Settings")
+            Text(stringResource(Res.string.go_to_settings))
         }
     }
 }

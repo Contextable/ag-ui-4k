@@ -13,6 +13,8 @@ import com.contextable.agui4k.client.data.model.AgentConfig
 import com.contextable.agui4k.client.data.model.AuthMethod
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
+import agui4kclient.shared.generated.resources.*
 
 @Composable
 fun AgentCard(
@@ -84,7 +86,7 @@ fun AgentCard(
                             onClick = { },
                             label = {
                                 Text(
-                                    text = getAuthMethodLabel(agent.authMethod),
+                                    text = getLocalizedAuthMethodLabel(agent.authMethod),
                                     style = MaterialTheme.typography.labelSmall
                                 )
                             },
@@ -100,7 +102,7 @@ fun AgentCard(
                         // Last used
                         agent.lastUsedAt?.let { lastUsed ->
                             Text(
-                                text = "Last used: ${formatDateTime(lastUsed)}",
+                                text = stringResource(Res.string.last_used, formatDateTime(lastUsed)),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -111,7 +113,7 @@ fun AgentCard(
                 if (isActive) {
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Active",
+                        contentDescription = stringResource(Res.string.active),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
@@ -129,7 +131,7 @@ fun AgentCard(
                     TextButton(
                         onClick = onActivate
                     ) {
-                        Text("Activate")
+                        Text(stringResource(Res.string.activate))
                     }
                 }
 
@@ -138,11 +140,11 @@ fun AgentCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit",
+                        contentDescription = stringResource(Res.string.edit),
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Edit")
+                    Text(stringResource(Res.string.edit))
                 }
 
                 TextButton(
@@ -153,11 +155,11 @@ fun AgentCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
+                        contentDescription = stringResource(Res.string.delete),
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Delete")
+                    Text(stringResource(Res.string.delete))
                 }
             }
         }
@@ -166,8 +168,8 @@ fun AgentCard(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Agent") },
-            text = { Text("Are you sure you want to delete \"${agent.name}\"?") },
+            title = { Text(stringResource(Res.string.delete_agent_title)) },
+            text = { Text(stringResource(Res.string.delete_agent_message, agent.name)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -178,20 +180,29 @@ fun AgentCard(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete")
+                    Text(stringResource(Res.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.cancel))
                 }
             }
         )
     }
 }
 
-// DO NOT DUPLICATE THIS FUNCTION - IT'S ALREADY IN AddAgentDialog.kt
-// Just use the one from AddAgentDialog.kt
+@Composable
+private fun getLocalizedAuthMethodLabel(authMethod: AuthMethod): String {
+    return when (authMethod) {
+        is AuthMethod.None -> stringResource(Res.string.auth_none)
+        is AuthMethod.ApiKey -> stringResource(Res.string.auth_api_key)
+        is AuthMethod.BearerToken -> stringResource(Res.string.auth_bearer_token)
+        is AuthMethod.BasicAuth -> stringResource(Res.string.auth_basic)
+        is AuthMethod.OAuth2 -> stringResource(Res.string.auth_oauth2)
+        is AuthMethod.Custom -> stringResource(Res.string.auth_custom)
+    }
+}
 
 private fun getAuthMethodIcon(authMethod: AuthMethod): androidx.compose.ui.graphics.vector.ImageVector {
     return when (authMethod) {

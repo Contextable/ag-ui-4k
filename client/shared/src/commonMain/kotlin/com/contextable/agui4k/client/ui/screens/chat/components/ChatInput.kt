@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import agui4kclient.shared.generated.resources.*
 
 @Composable
 fun ChatInput(
@@ -40,7 +42,10 @@ fun ChatInput(
                 enabled = enabled,
                 placeholder = {
                     Text(
-                        text = if (enabled) "Type a message..." else "Select an agent to chat",
+                        text = if (enabled)
+                            stringResource(Res.string.type_message_hint)
+                        else
+                            stringResource(Res.string.select_agent_hint),
                         style = MaterialTheme.typography.bodyLarge
                     )
                 },
@@ -75,7 +80,7 @@ fun ChatInput(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send",
+                    contentDescription = stringResource(Res.string.send),
                     modifier = Modifier.size(24.dp)
                 )
             }

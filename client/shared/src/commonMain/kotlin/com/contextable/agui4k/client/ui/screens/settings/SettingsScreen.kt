@@ -17,6 +17,8 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.contextable.agui4k.client.ui.screens.settings.components.AddAgentDialog
 import com.contextable.agui4k.client.ui.screens.settings.components.AgentCard
+import org.jetbrains.compose.resources.stringResource
+import agui4kclient.shared.generated.resources.*
 
 class SettingsScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -31,12 +33,12 @@ class SettingsScreen : Screen {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Settings") },
+                    title = { Text(stringResource(Res.string.settings)) },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
+                                contentDescription = stringResource(Res.string.back)
                             )
                         }
                     }
@@ -48,7 +50,7 @@ class SettingsScreen : Screen {
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Add Agent"
+                        contentDescription = stringResource(Res.string.add_agent)
                     )
                 }
             }
@@ -63,7 +65,7 @@ class SettingsScreen : Screen {
                 // Agents Section Header
                 item {
                     Text(
-                        text = "Agents",
+                        text = stringResource(Res.string.agents),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
@@ -140,13 +142,13 @@ private fun EmptyAgentsCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "No agents configured",
+                text = stringResource(Res.string.no_agents_configured),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Text(
-                text = "Add an agent to start chatting",
+                text = stringResource(Res.string.add_agent_to_start),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -160,7 +162,7 @@ private fun EmptyAgentsCard(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Agent")
+                Text(stringResource(Res.string.add_agent))
             }
         }
     }
