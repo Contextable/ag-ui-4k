@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.contextable.agui4k.client.android"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.contextable.agui4k.client.android"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
     }
@@ -44,5 +44,4 @@ android {
 
 dependencies {
     implementation(project(":shared"))
-    implementation("androidx.activity:activity-compose:1.8.2")
 }

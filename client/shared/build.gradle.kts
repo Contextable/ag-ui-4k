@@ -28,7 +28,7 @@ kotlin {
                 implementation(compose.components.uiToolingPreview)
 
                 // ag-ui-4k library
-                implementation("com.contextable:ag-ui-4k:0.1.0")
+                implementation("com.contextable:ag-ui-4k:0.1.6")
 
                 // Navigation
                 implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")
@@ -63,10 +63,10 @@ kotlin {
 
         val androidMain by getting {
             dependencies {
-                api("androidx.activity:activity-compose:1.8.2")
-                api("androidx.appcompat:appcompat:1.6.1")
-                api("androidx.core:core-ktx:1.12.0")
-                implementation("org.slf4j:slf4j-android:1.7.36")
+                api("androidx.activity:activity-compose:1.10.1")
+                api("androidx.appcompat:appcompat:1.7.1")
+                api("androidx.core:core-ktx:1.16.0")
+                implementation("com.github.tony19:logback-android:3.0.0")
             }
         }
 
@@ -80,15 +80,15 @@ kotlin {
         val androidInstrumentedTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("androidx.test:runner:1.5.2")
-                implementation("androidx.test.ext:junit:1.1.5")
-                implementation("androidx.test:core:1.5.0")
+                implementation("androidx.test:runner:1.6.2")
+                implementation("androidx.test.ext:junit:1.2.1")
+                implementation("androidx.test:core:1.6.1")
 
                 // Fixed Compose testing dependencies with explicit versions
-                implementation("androidx.compose.ui:ui-test-junit4:1.6.21")
-                implementation("androidx.compose.ui:ui-test-manifest:1.6.21")
-                implementation("androidx.activity:activity-compose:1.8.2")
-                implementation("androidx.compose.ui:ui-tooling:1.6.21")
+                implementation("androidx.compose.ui:ui-test-junit4:1.8.3")
+                implementation("androidx.compose.ui:ui-test-manifest:1.8.3")
+                implementation("androidx.activity:activity-compose:1.10.1")
+                implementation("androidx.compose.ui:ui-tooling:1.8.3")
             }
         }
 
@@ -110,7 +110,7 @@ kotlin {
 
 android {
     namespace = "com.contextable.agui4k.client"
-    compileSdk = 34
+    compileSdk = 36
 
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     sourceSets["main"].res.srcDirs("src/androidMain/res")
