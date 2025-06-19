@@ -34,18 +34,26 @@ data class DisplayMessage(
     val content: String,
     val timestamp: Long = Clock.System.now().toEpochMilliseconds(),
     val isStreaming: Boolean = false,
-    val ephemeralGroupId: String? = null  // Add this to group replaceable messages
+    val ephemeralGroupId: String? = null,  // For grouping replaceable messages
+    val ephemeralType: EphemeralType? = null  // Track type of ephemeral message
 )
 
 enum class MessageRole {
-    USER, ASSISTANT, SYSTEM, ERROR, STATE_UPDATE
+    USER, ASSISTANT, SYSTEM, ERROR, TOOL_CALL, STEP_INFO
+}
+
+enum class EphemeralType {
+    TOOL_CALL, STEP
 }
 
 class ChatViewModel : ScreenModel {
     private val settings = getPlatformSettings()
     private val agentRepository = AgentRepository.getInstance(settings)
     private val authManager = AuthManager()
-    private var currentEphemeralMessageId: String? = null
+
+    // Track ephemeral messages by type
+    private val ephemeralMessageIds = mutableMapOf<EphemeralType, String>()
+    private val toolCallBuffer = mutableMapOf<String, StringBuilder>()
 
     private val _state = MutableStateFlow(ChatState())
     val state: StateFlow<ChatState> = _state.asStateFlow()
@@ -68,27 +76,44 @@ class ChatViewModel : ScreenModel {
         }
     }
 
-    private fun setEphemeralMessage(content: String) {
+    private fun setEphemeralMessage(content: String, type: EphemeralType, icon: String = "") {
         _state.update { state ->
-            // Remove the old ephemeral message if it exists
-            val filtered = if (currentEphemeralMessageId != null) {
-                state.messages.filter { it.id != currentEphemeralMessageId }
+            // Remove the old ephemeral message of this type if it exists
+            val oldId = ephemeralMessageIds[type]
+            val filtered = if (oldId != null) {
+                state.messages.filter { it.id != oldId }
             } else {
                 state.messages
             }
 
-            // Create new message
+            // Create new message with icon
             val newMessage = DisplayMessage(
                 id = generateMessageId(),
-                role = MessageRole.STATE_UPDATE,
-                content = content,
-                ephemeralGroupId = "ephemeral"
+                role = when (type) {
+                    EphemeralType.TOOL_CALL -> MessageRole.TOOL_CALL
+                    EphemeralType.STEP -> MessageRole.STEP_INFO
+                },
+                content = "$icon $content".trim(),
+                ephemeralGroupId = type.name,
+                ephemeralType = type
             )
 
             // Track the new ID
-            currentEphemeralMessageId = newMessage.id
+            ephemeralMessageIds[type] = newMessage.id
 
             state.copy(messages = filtered + newMessage)
+        }
+    }
+
+    private fun clearEphemeralMessage(type: EphemeralType) {
+        val messageId = ephemeralMessageIds[type]
+        if (messageId != null) {
+            _state.update { state ->
+                state.copy(
+                    messages = state.messages.filter { it.id != messageId }
+                )
+            }
+            ephemeralMessageIds.remove(type)
         }
     }
 
@@ -111,7 +136,7 @@ class ChatViewModel : ScreenModel {
 
             _state.update { it.copy(isConnected = true, error = null) }
 
-            // Add system message - using localized string constants
+            // Add system message
             addDisplayMessage(
                 DisplayMessage(
                     id = generateMessageId(),
@@ -135,6 +160,8 @@ class ChatViewModel : ScreenModel {
         currentJob = null
         currentAgent = null
         streamingMessages.clear()
+        toolCallBuffer.clear()
+        ephemeralMessageIds.clear()
         _state.update {
             it.copy(
                 isConnected = false,
@@ -190,24 +217,64 @@ class ChatViewModel : ScreenModel {
                 _state.update { it.copy(isLoading = false) }
                 // Finalize any streaming messages
                 finalizeStreamingMessages()
+                // Clear any remaining ephemeral messages
+                ephemeralMessageIds.keys.toList().forEach { type ->
+                    clearEphemeralMessage(type)
+                }
             }
         }
     }
 
     private fun handleAgentEvent(event: BaseEvent) {
         when (event) {
+            // Tool Call Events
+            is ToolCallStartEvent -> {
+                toolCallBuffer[event.toolCallId] = StringBuilder()
+                setEphemeralMessage(
+                    "Calling ${event.toolCallName}...",
+                    EphemeralType.TOOL_CALL,
+                    "🔧"
+                )
+            }
 
-            is StateDeltaEvent -> {
-                val changes = formatStateDelta(event.delta)
-                if (changes != null) {
-                    setEphemeralMessage(changes)
+            is ToolCallArgsEvent -> {
+                toolCallBuffer[event.toolCallId]?.append(event.delta)
+                // Update the ephemeral message with partial args if you want
+                val args = toolCallBuffer[event.toolCallId]?.toString() ?: ""
+                setEphemeralMessage(
+                    "Calling tool with: ${args.take(50)}${if (args.length > 50) "..." else ""}",
+                    EphemeralType.TOOL_CALL,
+                    "🔧"
+                )
+            }
+
+            is ToolCallEndEvent -> {
+                // Clear the tool call ephemeral message after a short delay
+                screenModelScope.launch {
+                    delay(1000) // Show completion briefly
+                    clearEphemeralMessage(EphemeralType.TOOL_CALL)
+                }
+                toolCallBuffer.remove(event.toolCallId)
+            }
+
+            // Step Events
+            is StepStartedEvent -> {
+                setEphemeralMessage(
+                    event.stepName,
+                    EphemeralType.STEP,
+                    "●"
+                )
+            }
+
+            is StepFinishedEvent -> {
+                // Clear step message after a short delay
+                screenModelScope.launch {
+                    delay(500) // Quick flash for steps
+                    clearEphemeralMessage(EphemeralType.STEP)
                 }
             }
 
-            is StateSnapshotEvent -> {
-                setEphemeralMessage("Full state synchronized")
-            }
-
+            // Text Message Events (unchanged)
             is TextMessageStartEvent -> {
                 streamingMessages[event.messageId] = StringBuilder()
                 addDisplayMessage(
@@ -240,38 +307,19 @@ class ChatViewModel : ScreenModel {
             }
 
             is RunFinishedEvent -> {
-                // Clear the ephemeral message
-                if (currentEphemeralMessageId != null) {
-                    _state.update { state ->
-                        state.copy(
-                            messages = state.messages.filter { it.id != currentEphemeralMessageId }
-                        )
-                    }
-                    currentEphemeralMessageId = null
+                // Clear all ephemeral messages when run finishes
+                ephemeralMessageIds.keys.toList().forEach { type ->
+                    clearEphemeralMessage(type)
                 }
+            }
+
+            // Skip state events - we don't want to show them
+            is StateDeltaEvent, is StateSnapshotEvent -> {
+                // Do nothing - no ephemeral messages for state changes
             }
 
             else -> {
                 logger.debug { "Received event: $event" }
-            }
-        }
-    }
-
-    private fun formatStateDelta(delta: List<JsonPatchOperation>): String? {
-        val meaningful = delta.filter { op ->
-            // Filter out operations that just clear values
-            !(op.op == "replace" && op.value == null)
-        }
-
-        if (meaningful.isEmpty()) return null
-
-        return meaningful.joinToString(", ") { op ->
-            when (op.op) {
-                "add" -> "Added ${op.path}"
-                "remove" -> "Removed ${op.path}"
-                "replace" -> "Updated ${op.path}"
-                "move" -> "Moved from ${op.from} to ${op.path}"
-                else -> "${op.op} ${op.path}"
             }
         }
     }
@@ -326,5 +374,9 @@ class ChatViewModel : ScreenModel {
         currentAgent?.abortRun()
         _state.update { it.copy(isLoading = false) }
         finalizeStreamingMessages()
+        // Clear ephemeral messages on cancel
+        ephemeralMessageIds.keys.toList().forEach { type ->
+            clearEphemeralMessage(type)
+        }
     }
 }

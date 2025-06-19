@@ -31,7 +31,8 @@ fun MessageBubble(
     val isUser = message.role == MessageRole.USER
     val isError = message.role == MessageRole.ERROR
     val isSystem = message.role == MessageRole.SYSTEM
-    val isStateUpdate = message.role == MessageRole.STATE_UPDATE
+    val isToolCall = message.role == MessageRole.TOOL_CALL
+    val isStepInfo = message.role == MessageRole.STEP_INFO
     val isEphemeral = message.ephemeralGroupId != null
 
     // Enhanced fade-in animation
@@ -78,9 +79,8 @@ fun MessageBubble(
                         isUser -> MaterialTheme.colorScheme.primary
                         isError -> MaterialTheme.colorScheme.error
                         isSystem -> MaterialTheme.colorScheme.tertiary
-                        isStateUpdate -> MaterialTheme.colorScheme.secondaryContainer.copy(
-                            alpha = 0.7f  // Make background slightly transparent
-                        )
+                        isToolCall -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+                        isStepInfo -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
                         else -> MaterialTheme.colorScheme.surfaceVariant
                     }
                 )
@@ -130,7 +130,8 @@ fun MessageBubble(
                         isUser -> MaterialTheme.colorScheme.onPrimary
                         isError -> MaterialTheme.colorScheme.onError
                         isSystem -> MaterialTheme.colorScheme.onTertiary
-                        isStateUpdate -> MaterialTheme.colorScheme.onSecondaryContainer
+                        isToolCall -> MaterialTheme.colorScheme.onSecondaryContainer
+                        isStepInfo -> MaterialTheme.colorScheme.onTertiaryContainer
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
 
@@ -169,7 +170,8 @@ fun MessageBubble(
                             isUser -> MaterialTheme.colorScheme.onPrimary
                             isError -> MaterialTheme.colorScheme.onError
                             isSystem -> MaterialTheme.colorScheme.onTertiary
-                            isStateUpdate -> MaterialTheme.colorScheme.onSecondaryContainer
+                            isToolCall -> MaterialTheme.colorScheme.onSecondaryContainer
+                            isStepInfo -> MaterialTheme.colorScheme.onTertiaryContainer
                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                         }
                     )
