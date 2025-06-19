@@ -14,6 +14,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.contextable.agui4k.client.ui.screens.chat.components.ChatHeader
 import com.contextable.agui4k.client.ui.screens.chat.components.ChatInput
 import com.contextable.agui4k.client.ui.screens.chat.components.MessageList
+import com.contextable.agui4k.client.ui.screens.chat.components.UserConfirmationDialog
 import com.contextable.agui4k.client.ui.screens.settings.SettingsScreen
 import org.jetbrains.compose.resources.stringResource
 import agui4kclient.shared.generated.resources.*
@@ -65,6 +66,15 @@ class ChatScreen : Screen {
                     }
                 }
             }
+        }
+
+        // Show confirmation dialog if there's a pending confirmation
+        state.pendingConfirmation?.let { confirmation ->
+            UserConfirmationDialog(
+                request = confirmation,
+                onConfirm = { viewModel.confirmAction() },
+                onReject = { viewModel.rejectAction() }
+            )
         }
     }
 }

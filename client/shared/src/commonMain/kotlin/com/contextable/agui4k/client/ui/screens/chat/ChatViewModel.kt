@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.serialization.json.*
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -25,7 +26,8 @@ data class ChatState(
     val ephemeralMessage: DisplayMessage? = null,
     val isLoading: Boolean = false,
     val isConnected: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val pendingConfirmation: UserConfirmationRequest? = null
 )
 
 data class DisplayMessage(
@@ -34,8 +36,16 @@ data class DisplayMessage(
     val content: String,
     val timestamp: Long = Clock.System.now().toEpochMilliseconds(),
     val isStreaming: Boolean = false,
-    val ephemeralGroupId: String? = null,  // For grouping replaceable messages
-    val ephemeralType: EphemeralType? = null  // Track type of ephemeral message
+    val ephemeralGroupId: String? = null,
+    val ephemeralType: EphemeralType? = null
+)
+
+data class UserConfirmationRequest(
+    val toolCallId: String,
+    val action: String,
+    val impact: String,
+    val details: Map<String, String> = emptyMap(),
+    val timeout: Int = 30
 )
 
 enum class MessageRole {
@@ -54,6 +64,7 @@ class ChatViewModel : ScreenModel {
     // Track ephemeral messages by type
     private val ephemeralMessageIds = mutableMapOf<EphemeralType, String>()
     private val toolCallBuffer = mutableMapOf<String, StringBuilder>()
+    private val pendingToolCalls = mutableMapOf<String, String>() // toolCallId -> toolName
 
     private val _state = MutableStateFlow(ChatState())
     val state: StateFlow<ChatState> = _state.asStateFlow()
@@ -161,11 +172,13 @@ class ChatViewModel : ScreenModel {
         currentAgent = null
         streamingMessages.clear()
         toolCallBuffer.clear()
+        pendingToolCalls.clear()
         ephemeralMessageIds.clear()
         _state.update {
             it.copy(
                 isConnected = false,
-                messages = emptyList()
+                messages = emptyList(),
+                pendingConfirmation = null
             )
         }
     }
@@ -226,35 +239,85 @@ class ChatViewModel : ScreenModel {
     }
 
     private fun handleAgentEvent(event: BaseEvent) {
+        logger.debug { "Handling event: ${event::class.simpleName}" }
+
         when (event) {
             // Tool Call Events
             is ToolCallStartEvent -> {
+                logger.debug { "Tool call started: ${event.toolCallName} (${event.toolCallId})" }
                 toolCallBuffer[event.toolCallId] = StringBuilder()
-                setEphemeralMessage(
-                    "Calling ${event.toolCallName}...",
-                    EphemeralType.TOOL_CALL,
-                    "🔧"
-                )
+                pendingToolCalls[event.toolCallId] = event.toolCallName
+
+                // Only show ephemeral message for non-confirmation tools
+                if (event.toolCallName != "user_confirmation") {
+                    setEphemeralMessage(
+                        "Calling ${event.toolCallName}...",
+                        EphemeralType.TOOL_CALL,
+                        "🔧"
+                    )
+                }
             }
 
             is ToolCallArgsEvent -> {
                 toolCallBuffer[event.toolCallId]?.append(event.delta)
-                // Update the ephemeral message with partial args if you want
-                val args = toolCallBuffer[event.toolCallId]?.toString() ?: ""
-                setEphemeralMessage(
-                    "Calling tool with: ${args.take(50)}${if (args.length > 50) "..." else ""}",
-                    EphemeralType.TOOL_CALL,
-                    "🔧"
-                )
+                val currentArgs = toolCallBuffer[event.toolCallId]?.toString() ?: ""
+                logger.debug { "Tool call args for ${event.toolCallId}: $currentArgs" }
+
+                val toolName = pendingToolCalls[event.toolCallId]
+                if (toolName != "user_confirmation") {
+                    setEphemeralMessage(
+                        "Calling tool with: ${currentArgs.take(50)}${if (currentArgs.length > 50) "..." else ""}",
+                        EphemeralType.TOOL_CALL,
+                        "🔧"
+                    )
+                }
             }
 
             is ToolCallEndEvent -> {
-                // Clear the tool call ephemeral message after a short delay
-                screenModelScope.launch {
-                    delay(1000) // Show completion briefly
-                    clearEphemeralMessage(EphemeralType.TOOL_CALL)
+                val toolName = pendingToolCalls[event.toolCallId]
+                val args = toolCallBuffer[event.toolCallId]?.toString()
+
+                logger.debug { "Tool call ended: $toolName with args: $args" }
+
+                if (toolName == "user_confirmation" && args != null) {
+                    // Parse the confirmation request
+                    try {
+                        val jsonArgs = Json.parseToJsonElement(args).jsonObject
+                        val action = jsonArgs["action"]?.jsonPrimitive?.content ?: "Unknown action"
+                        val impact = jsonArgs["impact"]?.jsonPrimitive?.content ?: "medium"
+                        val detailsJson = jsonArgs["details"]?.jsonObject ?: emptyMap<String, JsonElement>()
+                        val details = detailsJson.mapValues {
+                            it.value.jsonPrimitive.content
+                        }
+                        val timeout = jsonArgs["timeout_seconds"]?.jsonPrimitive?.intOrNull ?: 30
+
+                        logger.debug { "Showing confirmation dialog for: $action (impact: $impact)" }
+
+                        // Show confirmation dialog
+                        _state.update {
+                            it.copy(
+                                pendingConfirmation = UserConfirmationRequest(
+                                    toolCallId = event.toolCallId,
+                                    action = action,
+                                    impact = impact,
+                                    details = details,
+                                    timeout = timeout
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        logger.error(e) { "Failed to parse user confirmation request: $args" }
+                    }
+                } else {
+                    // Clear ephemeral message for other tools after a short delay
+                    screenModelScope.launch {
+                        delay(1000)
+                        clearEphemeralMessage(EphemeralType.TOOL_CALL)
+                    }
                 }
+
                 toolCallBuffer.remove(event.toolCallId)
+                pendingToolCalls.remove(event.toolCallId)
             }
 
             // Step Events
@@ -274,7 +337,7 @@ class ChatViewModel : ScreenModel {
                 }
             }
 
-            // Text Message Events (unchanged)
+            // Text Message Events
             is TextMessageStartEvent -> {
                 streamingMessages[event.messageId] = StringBuilder()
                 addDisplayMessage(
@@ -322,6 +385,46 @@ class ChatViewModel : ScreenModel {
                 logger.debug { "Received event: $event" }
             }
         }
+    }
+
+    fun confirmAction() {
+        val confirmation = _state.value.pendingConfirmation ?: return
+
+        // Create tool result message
+        val toolMessage = ToolMessage(
+            id = generateMessageId(),
+            content = """{"status": "confirmed", "user_response": "approved", "timestamp": "${Clock.System.now()}"}""",
+            toolCallId = confirmation.toolCallId
+        )
+
+        // Add to agent's message history
+        currentAgent?.addMessage(toolMessage)
+
+        // Clear the confirmation dialog
+        _state.update { it.copy(pendingConfirmation = null) }
+
+        // Continue the conversation
+        runAgent()
+    }
+
+    fun rejectAction() {
+        val confirmation = _state.value.pendingConfirmation ?: return
+
+        // Create tool result message
+        val toolMessage = ToolMessage(
+            id = generateMessageId(),
+            content = """{"status": "rejected", "user_response": "cancelled", "timestamp": "${Clock.System.now()}"}""",
+            toolCallId = confirmation.toolCallId
+        )
+
+        // Add to agent's message history
+        currentAgent?.addMessage(toolMessage)
+
+        // Clear the confirmation dialog
+        _state.update { it.copy(pendingConfirmation = null) }
+
+        // Continue the conversation
+        runAgent()
     }
 
     private fun updateStreamingMessage(messageId: String, delta: String) {
