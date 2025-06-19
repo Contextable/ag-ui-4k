@@ -32,6 +32,6 @@ val AgUiJson = Json {
     ignoreUnknownKeys = true
     isLenient = true
     encodeDefaults = true
-    explicitNulls = false
+    explicitNulls = true
     classDiscriminator = "type"  // This uses "type" as discriminator, NOT as a field
 }

@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "com.contextable"
-version = "0.1.0"
+version = "0.1.6"
 
 repositories {
     google()
@@ -78,33 +78,33 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // Ktor for networking
-                implementation("io.ktor:ktor-client-core:3.1.3")
-                implementation("io.ktor:ktor-client-content-negotiation:3.1.3")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
-                implementation("io.ktor:ktor-client-logging:3.1.3")
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.kotlinx.json)
+                implementation(libs.ktor.client.logging)
                 
                 // Kotlinx libraries
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.datetime)
                 
                 // Logging
-                implementation("io.github.microutils:kotlin-logging:3.0.5")
+                implementation(libs.kotlin.logging)
             }
         }
         
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
-                implementation("io.ktor:ktor-client-mock:3.1.3")
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.ktor.client.mock)
             }
         }
         
         val androidMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-android:3.1.3")
-                implementation("org.slf4j:slf4j-android:1.7.36")
+                implementation(libs.ktor.client.android)
+                implementation(libs.logback.android)
             }
         }
         
@@ -118,14 +118,14 @@ kotlin {
             iosSimulatorArm64Main.dependsOn(this)
             
             dependencies {
-                implementation("io.ktor:ktor-client-darwin:3.1.3")
+                implementation(libs.ktor.client.darwin)
             }
         }
         
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-java:3.1.3")
-                implementation("org.slf4j:slf4j-simple:2.0.9")
+                implementation(libs.ktor.client.java)
+                implementation(libs.slf4j.simple)
             }
         }
     }
@@ -133,7 +133,7 @@ kotlin {
 
 android {
     namespace = "com.contextable.agui4k"  // Keep package name for compatibility
-    compileSdk = 34
+    compileSdk = 36
     
     defaultConfig {
         minSdk = 21
