@@ -11,6 +11,7 @@ import com.contextable.agui4k.core.types.*
 import com.contextable.agui4k.client.util.getPlatformSettings
 import com.contextable.agui4k.client.util.Strings
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -21,6 +22,7 @@ private val logger = KotlinLogging.logger {}
 data class ChatState(
     val activeAgent: AgentConfig? = null,
     val messages: List<DisplayMessage> = emptyList(),
+    val ephemeralMessage: DisplayMessage? = null,
     val isLoading: Boolean = false,
     val isConnected: Boolean = false,
     val error: String? = null
@@ -31,17 +33,19 @@ data class DisplayMessage(
     val role: MessageRole,
     val content: String,
     val timestamp: Long = Clock.System.now().toEpochMilliseconds(),
-    val isStreaming: Boolean = false
+    val isStreaming: Boolean = false,
+    val ephemeralGroupId: String? = null  // Add this to group replaceable messages
 )
 
 enum class MessageRole {
-    USER, ASSISTANT, SYSTEM, ERROR
+    USER, ASSISTANT, SYSTEM, ERROR, STATE_UPDATE
 }
 
 class ChatViewModel : ScreenModel {
     private val settings = getPlatformSettings()
     private val agentRepository = AgentRepository.getInstance(settings)
     private val authManager = AuthManager()
+    private var currentEphemeralMessageId: String? = null
 
     private val _state = MutableStateFlow(ChatState())
     val state: StateFlow<ChatState> = _state.asStateFlow()
@@ -61,6 +65,30 @@ class ChatViewModel : ScreenModel {
                     disconnectFromAgent()
                 }
             }
+        }
+    }
+
+    private fun setEphemeralMessage(content: String) {
+        _state.update { state ->
+            // Remove the old ephemeral message if it exists
+            val filtered = if (currentEphemeralMessageId != null) {
+                state.messages.filter { it.id != currentEphemeralMessageId }
+            } else {
+                state.messages
+            }
+
+            // Create new message
+            val newMessage = DisplayMessage(
+                id = generateMessageId(),
+                role = MessageRole.STATE_UPDATE,
+                content = content,
+                ephemeralGroupId = "ephemeral"
+            )
+
+            // Track the new ID
+            currentEphemeralMessageId = newMessage.id
+
+            state.copy(messages = filtered + newMessage)
         }
     }
 
@@ -168,6 +196,18 @@ class ChatViewModel : ScreenModel {
 
     private fun handleAgentEvent(event: BaseEvent) {
         when (event) {
+
+            is StateDeltaEvent -> {
+                val changes = formatStateDelta(event.delta)
+                if (changes != null) {
+                    setEphemeralMessage(changes)
+                }
+            }
+
+            is StateSnapshotEvent -> {
+                setEphemeralMessage("Full state synchronized")
+            }
+
             is TextMessageStartEvent -> {
                 streamingMessages[event.messageId] = StringBuilder()
                 addDisplayMessage(
@@ -199,9 +239,39 @@ class ChatViewModel : ScreenModel {
                 )
             }
 
-            // Handle other events as needed
+            is RunFinishedEvent -> {
+                // Clear the ephemeral message
+                if (currentEphemeralMessageId != null) {
+                    _state.update { state ->
+                        state.copy(
+                            messages = state.messages.filter { it.id != currentEphemeralMessageId }
+                        )
+                    }
+                    currentEphemeralMessageId = null
+                }
+            }
+
             else -> {
                 logger.debug { "Received event: $event" }
+            }
+        }
+    }
+
+    private fun formatStateDelta(delta: List<JsonPatchOperation>): String? {
+        val meaningful = delta.filter { op ->
+            // Filter out operations that just clear values
+            !(op.op == "replace" && op.value == null)
+        }
+
+        if (meaningful.isEmpty()) return null
+
+        return meaningful.joinToString(", ") { op ->
+            when (op.op) {
+                "add" -> "Added ${op.path}"
+                "remove" -> "Removed ${op.path}"
+                "replace" -> "Updated ${op.path}"
+                "move" -> "Moved from ${op.from} to ${op.path}"
+                else -> "${op.op} ${op.path}"
             }
         }
     }

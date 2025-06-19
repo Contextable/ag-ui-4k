@@ -1,13 +1,20 @@
 package com.contextable.agui4k.client.ui.screens.chat.components
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.contextable.agui4k.client.ui.screens.chat.DisplayMessage
@@ -24,11 +31,35 @@ fun MessageBubble(
     val isUser = message.role == MessageRole.USER
     val isError = message.role == MessageRole.ERROR
     val isSystem = message.role == MessageRole.SYSTEM
+    val isStateUpdate = message.role == MessageRole.STATE_UPDATE
+    val isEphemeral = message.ephemeralGroupId != null
+
+    // Enhanced fade-in animation
+    val animatedAlpha = remember(message.id) { Animatable(0f) }
+    LaunchedEffect(message.id) {
+        if (isEphemeral) {
+            // Slower, more noticeable fade for ephemeral messages
+            animatedAlpha.animateTo(
+                targetValue = 0.8f,  // Don't go fully opaque
+                animationSpec = tween(
+                    durationMillis = 800,  // Slower fade
+                    easing = FastOutSlowInEasing
+                )
+            )
+        } else {
+            // Quick fade for regular messages
+            animatedAlpha.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 200)
+            )
+        }
+    }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .alpha(animatedAlpha.value),  // Apply fade
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
         Column(
@@ -47,6 +78,9 @@ fun MessageBubble(
                         isUser -> MaterialTheme.colorScheme.primary
                         isError -> MaterialTheme.colorScheme.error
                         isSystem -> MaterialTheme.colorScheme.tertiary
+                        isStateUpdate -> MaterialTheme.colorScheme.secondaryContainer.copy(
+                            alpha = 0.7f  // Make background slightly transparent
+                        )
                         else -> MaterialTheme.colorScheme.surfaceVariant
                     }
                 )
@@ -78,20 +112,72 @@ fun MessageBubble(
                     )
                 }
             } else {
-                Text(
-                    text = message.content,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = when {
+                // Main message text
+                if (isEphemeral) {
+                    // For ephemeral messages, create a shimmering text
+                    val infiniteTransition = rememberInfiniteTransition(label = "textShimmer")
+                    val shimmerTranslateAnim by infiniteTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 200f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(800, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart
+                        ),
+                        label = "textShimmer"
+                    )
+
+                    val textColor = when {
                         isUser -> MaterialTheme.colorScheme.onPrimary
                         isError -> MaterialTheme.colorScheme.onError
                         isSystem -> MaterialTheme.colorScheme.onTertiary
+                        isStateUpdate -> MaterialTheme.colorScheme.onSecondaryContainer
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
-                )
+
+                    Box {
+                        Text(
+                            text = message.content,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor,
+                            modifier = Modifier.drawWithContent {
+                                drawContent()
+
+                                // Draw shimmer overlay
+                                val shimmerBrush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.White.copy(alpha = 0.3f),
+                                        Color.Transparent
+                                    ),
+                                    start = Offset(shimmerTranslateAnim - 100f, 0f),
+                                    end = Offset(shimmerTranslateAnim + 100f, 0f)
+                                )
+
+                                drawRect(
+                                    brush = shimmerBrush,
+                                    blendMode = BlendMode.SrcOver
+                                )
+                            }
+                        )
+                    }
+                } else {
+                    // Regular text for non-ephemeral messages
+                    Text(
+                        text = message.content,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = when {
+                            isUser -> MaterialTheme.colorScheme.onPrimary
+                            isError -> MaterialTheme.colorScheme.onError
+                            isSystem -> MaterialTheme.colorScheme.onTertiary
+                            isStateUpdate -> MaterialTheme.colorScheme.onSecondaryContainer
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
             }
 
             // Always show timestamp when message is complete
-            if (!message.isStreaming) {
+            if (!message.isStreaming && !isEphemeral) {  // Don't show timestamp for ephemeral messages
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = formatTimestamp(message.timestamp),
