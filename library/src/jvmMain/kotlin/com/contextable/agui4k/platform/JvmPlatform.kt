@@ -1,7 +1,7 @@
 package com.contextable.agui4k.platform
 
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.engine.java.Java
+import io.ktor.client.engine.cio.CIO
 import org.slf4j.LoggerFactory
 
 /**
@@ -16,7 +16,7 @@ actual object Platform {
     /**
      * Returns the default HTTP client engine for JVM.
      */
-    actual fun httpClientEngine(): HttpClientEngine = Java.create()
+    actual fun httpClientEngine(): HttpClientEngine = CIO.create()
 
     /**
      * Checks if the platform supports WebSockets.

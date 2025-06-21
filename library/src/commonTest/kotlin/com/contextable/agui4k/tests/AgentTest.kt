@@ -191,9 +191,10 @@ class TestClient(config: AgentConfig = AgentConfig()) : AbstractAgent(config) {
 
     override suspend fun run(input: RunAgentInput): Flow<BaseEvent> = flow {
         // Emit run started
+        val runId = input.runId ?: "test_run_${System.currentTimeMillis()}"
         emit(RunStartedEvent(
             threadId = input.threadId,
-            runId = input.runId
+            runId = runId
         ))
 
         // Simulate some agent response
@@ -236,7 +237,7 @@ class TestClient(config: AgentConfig = AgentConfig()) : AbstractAgent(config) {
         // Emit run finished
         emit(RunFinishedEvent(
             threadId = input.threadId,
-            runId = input.runId
+            runId = runId
         ))
     }
 }

@@ -123,7 +123,7 @@ kotlin {
         
         val jvmMain by getting {
             dependencies {
-                implementation(libs.ktor.client.java)
+                implementation(libs.ktor.client.cio)
                 implementation(libs.slf4j.simple)
             }
         }
@@ -132,11 +132,13 @@ kotlin {
 
 android {
     namespace = "com.contextable.agui4k"  // Keep package name for compatibility
-    compileSdk = 36
+    compileSdk = 35
     
     defaultConfig {
         minSdk = 21
     }
+    
+    buildToolsVersion = "35.0.0"
     
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
