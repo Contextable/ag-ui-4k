@@ -3,6 +3,7 @@ package com.contextable.agui4k.client
 import com.contextable.agui4k.core.types.*
 import com.contextable.agui4k.transport.ClientTransport
 import com.contextable.agui4k.transport.RunSession
+import com.contextable.agui4k.tools.ToolRegistry
 import kotlinx.coroutines.flow.*
 import mu.KotlinLogging
 
@@ -46,8 +47,9 @@ data class StatefulClientConfig(
 class StatefulClient(
     transport: ClientTransport,
     private val stateManager: ClientStateManager = InMemoryClientStateManager(),
-    private val config: StatefulClientConfig = StatefulClientConfig()
-) : AbstractClient(transport) {
+    private val config: StatefulClientConfig = StatefulClientConfig(),
+    toolRegistry: ToolRegistry? = null
+) : AbstractClient(transport, toolRegistry) {
     
     private val activeSessionsMap = mutableMapOf<String, RunSession>()
     

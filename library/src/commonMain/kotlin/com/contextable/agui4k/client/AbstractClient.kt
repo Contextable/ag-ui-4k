@@ -3,6 +3,7 @@ package com.contextable.agui4k.client
 import com.contextable.agui4k.core.types.*
 import com.contextable.agui4k.transport.ClientTransport
 import com.contextable.agui4k.transport.RunSession
+import com.contextable.agui4k.tools.ToolRegistry
 import kotlinx.coroutines.flow.*
 import mu.KotlinLogging
 
@@ -18,7 +19,8 @@ private val logger = KotlinLogging.logger {}
  * - Error handling patterns
  */
 abstract class AbstractClient(
-    protected val transport: ClientTransport
+    protected val transport: ClientTransport,
+    protected val toolRegistry: ToolRegistry? = null
 ) {
     /**
      * Starts a new conversation with the agent.
@@ -33,7 +35,8 @@ abstract class AbstractClient(
     ): Flow<BaseEvent> {
         logger.info { "Starting conversation with message: ${message.content}" }
         
-        val session = transport.startRun(message, threadId)
+        val tools = toolRegistry?.getAllTools()
+        val session = transport.startRun(message, threadId, tools)
         return processEventStream(session)
     }
     
@@ -50,7 +53,8 @@ abstract class AbstractClient(
     ): Flow<BaseEvent> {
         logger.info { "Starting conversation with ${messages.size} messages" }
         
-        val session = transport.startRunWithMessages(messages, threadId)
+        val tools = toolRegistry?.getAllTools()
+        val session = transport.startRunWithMessages(messages, threadId, tools)
         return processEventStream(session)
     }
     

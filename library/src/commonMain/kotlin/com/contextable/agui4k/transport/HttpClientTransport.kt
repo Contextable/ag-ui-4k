@@ -78,18 +78,19 @@ class HttpClientTransport(
         }
     }
     
-    override suspend fun startRun(message: Message, threadId: String?): RunSession {
-        return startRunWithMessages(listOf(message), threadId)
+    override suspend fun startRun(message: Message, threadId: String?, tools: List<Tool>?): RunSession {
+        return startRunWithMessages(listOf(message), threadId, tools)
     }
     
-    override suspend fun startRunWithMessages(messages: List<Message>, threadId: String?): RunSession {
+    override suspend fun startRunWithMessages(messages: List<Message>, threadId: String?, tools: List<Tool>?): RunSession {
         // Use provided thread ID or generate a new one
         val finalThreadId = threadId ?: generateThreadId()
         
-        // Create RunAgentInput with all messages
+        // Create RunAgentInput with all messages and tools
         val input = RunAgentInput(
             messages = messages,
-            threadId = finalThreadId
+            threadId = finalThreadId,
+            tools = tools ?: emptyList()
         )
         
         return HttpRunSession(httpClient, config.url, input, json, config.retryPolicy)
