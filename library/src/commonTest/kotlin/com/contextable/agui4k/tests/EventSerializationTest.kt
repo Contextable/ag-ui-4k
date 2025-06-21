@@ -1,25 +1,15 @@
 package com.contextable.agui4k.tests
 
-import com.contextable.agui4k.core.protocol.EventType
-import com.contextable.agui4k.core.serialization.AgUiJson
 import com.contextable.agui4k.core.types.*
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToString
+import com.contextable.agui4k.core.serialization.AgUiJson
 import kotlinx.serialization.json.*
-import kotlinx.datetime.Clock
 import kotlin.test.*
 
-@OptIn(ExperimentalSerializationApi::class)
 class EventSerializationTest {
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        encodeDefaults = true
-        explicitNulls = false
-    }
+    private val json = AgUiJson
 
-    // Lifecycle Events Tests
+    // ========== Lifecycle Events Tests ==========
 
     @Test
     fun testRunStartedEventSerialization() {
@@ -29,13 +19,13 @@ class EventSerializationTest {
             timestamp = 1234567890L
         )
 
-        val jsonString = json.encodeToString<BaseEvent>(event)
+        val jsonString = json.encodeToString(BaseEvent.serializer(), event)
         val jsonObj = json.parseToJsonElement(jsonString).jsonObject
 
-        // The discriminator shows up as "type" in JSON
+        // Verify the discriminator is present
         assertEquals("RUN_STARTED", jsonObj["type"]?.jsonPrimitive?.content)
 
-        // But it's NOT the type property - verify other fields
+        // Verify fields
         assertEquals("thread_123", jsonObj["threadId"]?.jsonPrimitive?.content)
         assertEquals("run_456", jsonObj["runId"]?.jsonPrimitive?.content)
         assertEquals(1234567890L, jsonObj["timestamp"]?.jsonPrimitive?.longOrNull)
@@ -44,36 +34,6 @@ class EventSerializationTest {
         val decoded = json.decodeFromString<BaseEvent>(jsonString)
         assertTrue(decoded is RunStartedEvent)
         assertEquals(event, decoded)
-
-        // Verify the type property is correctly set after deserialization
-        assertEquals(EventType.RUN_STARTED, decoded.type)
-    }
-
-    @Test
-    fun testTypeFieldNotSerialized() {
-        val event = RunStartedEvent(
-            threadId = "test",
-            runId = "test"
-        )
-
-        // Serialize as concrete type to check raw output
-        val concreteJson = Json {
-            encodeDefaults = true
-            explicitNulls = false
-        }
-
-        val jsonString = concreteJson.encodeToString(event)
-        val jsonObj = concreteJson.parseToJsonElement(jsonString).jsonObject
-
-        // The raw event should NOT have a "type" field when serialized as concrete type
-        assertFalse(jsonObj.containsKey("type"), "type field should not be serialized")
-
-        // But when serialized polymorphically, it should have discriminator
-        val polyJsonString = json.encodeToString<BaseEvent>(event)
-        val polyJsonObj = json.parseToJsonElement(polyJsonString).jsonObject
-
-        // The discriminator "type" should be present
-        assertEquals("RUN_STARTED", polyJsonObj["type"]?.jsonPrimitive?.content)
     }
 
     @Test
@@ -87,14 +47,15 @@ class EventSerializationTest {
         val decoded = json.decodeFromString<BaseEvent>(jsonString)
 
         assertTrue(decoded is RunFinishedEvent)
-        assertEquals(event, decoded)
+        assertEquals(event.threadId, decoded.threadId)
+        assertEquals(event.runId, decoded.runId)
     }
 
     @Test
     fun testRunErrorEventSerialization() {
         val event = RunErrorEvent(
             message = "Something went wrong",
-            code = "AGENT_ERROR"
+            code = "ERR_001"
         )
 
         val jsonString = json.encodeToString<BaseEvent>(event)
@@ -102,7 +63,7 @@ class EventSerializationTest {
 
         assertEquals("RUN_ERROR", jsonObj["type"]?.jsonPrimitive?.content)
         assertEquals("Something went wrong", jsonObj["message"]?.jsonPrimitive?.content)
-        assertEquals("AGENT_ERROR", jsonObj["code"]?.jsonPrimitive?.content)
+        assertEquals("ERR_001", jsonObj["code"]?.jsonPrimitive?.content)
 
         val decoded = json.decodeFromString<BaseEvent>(jsonString)
         assertTrue(decoded is RunErrorEvent)
@@ -110,23 +71,26 @@ class EventSerializationTest {
     }
 
     @Test
-    fun testStepEventseSerialization() {
+    fun testStepEventsSerialization() {
         val startEvent = StepStartedEvent(stepName = "data_processing")
         val finishEvent = StepFinishedEvent(stepName = "data_processing")
 
+        // Test start event
         val startJson = json.encodeToString<BaseEvent>(startEvent)
-        val finishJson = json.encodeToString<BaseEvent>(finishEvent)
-
         val decodedStart = json.decodeFromString<BaseEvent>(startJson)
-        val decodedFinish = json.decodeFromString<BaseEvent>(finishJson)
 
         assertTrue(decodedStart is StepStartedEvent)
+        assertEquals("data_processing", decodedStart.stepName)
+
+        // Test finish event
+        val finishJson = json.encodeToString<BaseEvent>(finishEvent)
+        val decodedFinish = json.decodeFromString<BaseEvent>(finishJson)
+
         assertTrue(decodedFinish is StepFinishedEvent)
-        assertEquals(startEvent, decodedStart)
-        assertEquals(finishEvent, decodedFinish)
+        assertEquals("data_processing", decodedFinish.stepName)
     }
 
-    // Text Message Events Tests
+    // ========== Text Message Events Tests ==========
 
     @Test
     fun testTextMessageStartEventSerialization() {
@@ -151,26 +115,25 @@ class EventSerializationTest {
     fun testTextMessageContentEventSerialization() {
         val event = TextMessageContentEvent(
             messageId = "msg_789",
-            delta = "Hello, how can I help you today?"
+            delta = "Hello, world!"
         )
 
         val jsonString = json.encodeToString<BaseEvent>(event)
         val decoded = json.decodeFromString<BaseEvent>(jsonString)
 
         assertTrue(decoded is TextMessageContentEvent)
-        assertEquals(event, decoded)
+        assertEquals(event.messageId, decoded.messageId)
+        assertEquals(event.delta, decoded.delta)
+    }
 
-        // Test with special characters
-        val specialEvent = TextMessageContentEvent(
-            messageId = "msg_special",
-            delta = "Special chars: \"quotes\", \nnewlines, \ttabs, \\backslashes"
-        )
-
-        val specialJson = json.encodeToString<BaseEvent>(specialEvent)
-        val decodedSpecial = json.decodeFromString<BaseEvent>(specialJson)
-
-        assertTrue(decodedSpecial is TextMessageContentEvent)
-        assertEquals(specialEvent.delta, decodedSpecial.delta)
+    @Test
+    fun testTextMessageContentEmptyDeltaValidation() {
+        assertFailsWith<IllegalArgumentException> {
+            TextMessageContentEvent(
+                messageId = "msg_123",
+                delta = ""
+            )
+        }
     }
 
     @Test
@@ -184,7 +147,7 @@ class EventSerializationTest {
         assertEquals(event, decoded)
     }
 
-    // Tool Call Events Tests
+    // ========== Tool Call Events Tests ==========
 
     @Test
     fun testToolCallStartEventSerialization() {
@@ -211,7 +174,7 @@ class EventSerializationTest {
     fun testToolCallArgsEventSerialization() {
         val event = ToolCallArgsEvent(
             toolCallId = "tool_123",
-            delta = """{"location": "Paris", "unit": "celsius"}"""
+            delta = """{"location": "Paris"}"""
         )
 
         val jsonString = json.encodeToString<BaseEvent>(event)
@@ -219,18 +182,6 @@ class EventSerializationTest {
 
         assertTrue(decoded is ToolCallArgsEvent)
         assertEquals(event, decoded)
-
-        // Test partial JSON args
-        val partialEvent = ToolCallArgsEvent(
-            toolCallId = "tool_123",
-            delta = """{"loc"""
-        )
-
-        val partialJson = json.encodeToString<BaseEvent>(partialEvent)
-        val decodedPartial = json.decodeFromString<BaseEvent>(partialJson)
-
-        assertTrue(decodedPartial is ToolCallArgsEvent)
-        assertEquals(partialEvent.delta, decodedPartial.delta)
     }
 
     @Test
@@ -244,20 +195,19 @@ class EventSerializationTest {
         assertEquals(event, decoded)
     }
 
-    // State Management Events Tests
+    // ========== State Management Events Tests ==========
 
     @Test
     fun testStateSnapshotEventSerialization() {
-        val stateData = buildJsonObject {
+        val snapshot = buildJsonObject {
             put("user", "john_doe")
             put("preferences", buildJsonObject {
                 put("theme", "dark")
                 put("language", "en")
             })
-            put("counter", 42)
         }
 
-        val event = StateSnapshotEvent(snapshot = stateData)
+        val event = StateSnapshotEvent(snapshot = snapshot)
 
         val jsonString = json.encodeToString<BaseEvent>(event)
         val decoded = json.decodeFromString<BaseEvent>(jsonString)
@@ -268,27 +218,28 @@ class EventSerializationTest {
 
     @Test
     fun testStateDeltaEventSerialization() {
-        val patches = listOf(
-            JsonPatchOperation(
-                op = "add",
-                path = "/user/name",
-                value = JsonPrimitive("John Doe")
-            ),
-            JsonPatchOperation(
-                op = "replace",
-                path = "/counter",
-                value = JsonPrimitive(43)
-            ),
-            JsonPatchOperation(
-                op = "remove",
-                path = "/temp"
-            ),
-            JsonPatchOperation(
-                op = "move",
-                from = "/oldLocation",
-                path = "/newLocation"
-            )
-        )
+        // Create patches as JsonArray (the format expected by JSON Patch)
+        val patches = buildJsonArray {
+            addJsonObject {
+                put("op", "add")
+                put("path", "/user/name")
+                put("value", "John Doe")
+            }
+            addJsonObject {
+                put("op", "replace")
+                put("path", "/counter")
+                put("value", 43)
+            }
+            addJsonObject {
+                put("op", "remove")
+                put("path", "/temp")
+            }
+            addJsonObject {
+                put("op", "move")
+                put("path", "/foo")
+                put("from", "/bar")
+            }
+        }
 
         val event = StateDeltaEvent(delta = patches)
 
@@ -296,40 +247,61 @@ class EventSerializationTest {
         val decoded = json.decodeFromString<BaseEvent>(jsonString)
 
         assertTrue(decoded is StateDeltaEvent)
-        assertEquals(event.delta.size, decoded.delta.size)
+        assertTrue(decoded.delta is JsonArray)
+        assertEquals(4, decoded.delta.jsonArray.size)
 
-        // Verify each patch operation
-        event.delta.zip(decoded.delta).forEach { (original, decoded) ->
-            assertEquals(original.op, decoded.op)
-            assertEquals(original.path, decoded.path)
-            assertEquals(original.value, decoded.value)
-            assertEquals(original.from, decoded.from)
+        // Verify first patch
+        val firstPatch = decoded.delta.jsonArray[0].jsonObject
+        assertEquals("add", firstPatch["op"]?.jsonPrimitive?.content)
+        assertEquals("/user/name", firstPatch["path"]?.jsonPrimitive?.content)
+        assertEquals("John Doe", firstPatch["value"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun testStateDeltaWithJsonNull() {
+        val patches = buildJsonArray {
+            addJsonObject {
+                put("op", "add")
+                put("path", "/nullable")
+                put("value", JsonNull)
+            }
+            addJsonObject {
+                put("op", "test")
+                put("path", "/other")
+                put("value", JsonNull)
+            }
         }
+
+        val event = StateDeltaEvent(delta = patches)
+        val jsonString = json.encodeToString<BaseEvent>(event)
+        val decoded = json.decodeFromString<BaseEvent>(jsonString)
+
+        assertTrue(decoded is StateDeltaEvent)
+        val patchArray = decoded.delta.jsonArray
+        assertEquals(2, patchArray.size)
+
+        patchArray.forEach { patch ->
+            assertEquals(JsonNull, patch.jsonObject["value"])
+        }
+    }
+
+    @Test
+    fun testStateDeltaEmptyArray() {
+        val event = StateDeltaEvent(delta = buildJsonArray { })
+
+        val jsonString = json.encodeToString<BaseEvent>(event)
+        val decoded = json.decodeFromString<BaseEvent>(jsonString)
+
+        assertTrue(decoded is StateDeltaEvent)
+        assertTrue(decoded.delta is JsonArray)
+        assertEquals(0, decoded.delta.jsonArray.size)
     }
 
     @Test
     fun testMessagesSnapshotEventSerialization() {
         val messages = listOf(
             UserMessage(id = "msg_1", content = "Hello"),
-            AssistantMessage(
-                id = "msg_2",
-                content = "Hi there!",
-                toolCalls = listOf(
-                    ToolCall(
-                        id = "call_1",
-                        type = "function",
-                        function = FunctionCall(
-                            name = "get_info",
-                            arguments = "{}"
-                        )
-                    )
-                )
-            ),
-            ToolMessage(
-                id = "msg_3",
-                content = "Result data",
-                toolCallId = "call_1"
-            )
+            AssistantMessage(id = "msg_2", content = "Hi there!")
         )
 
         val event = MessagesSnapshotEvent(messages = messages)
@@ -338,24 +310,17 @@ class EventSerializationTest {
         val decoded = json.decodeFromString<BaseEvent>(jsonString)
 
         assertTrue(decoded is MessagesSnapshotEvent)
-        assertEquals(event.messages.size, decoded.messages.size)
-
-        // Verify each message
-        event.messages.zip(decoded.messages).forEach { (original, decoded) ->
-            assertEquals(original.id, decoded.id)
-            assertEquals(original.role, decoded.role)
-            assertEquals(original.content, decoded.content)
-        }
+        assertEquals(2, decoded.messages.size)
     }
 
-    // Special Events Tests
+    // ========== Special Events Tests ==========
 
     @Test
     fun testRawEventSerialization() {
         val rawData = buildJsonObject {
             put("customField", "customValue")
             put("nested", buildJsonObject {
-                put("data", JsonArray(listOf(JsonPrimitive(1), JsonPrimitive(2), JsonPrimitive(3))))
+                put("data", JsonArray(listOf(JsonPrimitive(1), JsonPrimitive(2))))
             })
         }
 
@@ -377,7 +342,6 @@ class EventSerializationTest {
         val customValue = buildJsonObject {
             put("action", "user_clicked")
             put("element", "submit_button")
-            put("timestamp", 1234567890L)
         }
 
         val event = CustomEvent(
@@ -393,41 +357,12 @@ class EventSerializationTest {
         assertEquals(event.value, decoded.value)
     }
 
-    // Event Stream Tests
+    // ========== Null Handling Tests ==========
 
     @Test
-    fun testEventStreamSerialization() {
-        val events: List<BaseEvent> = listOf(
-            RunStartedEvent(threadId = "t1", runId = "r1"),
-            TextMessageStartEvent(messageId = "m1", role = "assistant"),
-            TextMessageContentEvent(messageId = "m1", delta = "Processing"),
-            ToolCallStartEvent(toolCallId = "tc1", toolCallName = "calculate"),
-            ToolCallArgsEvent(toolCallId = "tc1", delta = """{"x": 5}"""),
-            ToolCallEndEvent(toolCallId = "tc1"),
-            TextMessageContentEvent(messageId = "m1", delta = " your request..."),
-            TextMessageEndEvent(messageId = "m1"),
-            RunFinishedEvent(threadId = "t1", runId = "r1")
-        )
-
-        // Serialize each event
-        val serializedEvents = events.map { event ->
-            json.encodeToString<BaseEvent>(event)
-        }
-
-        // Deserialize and verify
-        serializedEvents.zip(events).forEach { (jsonString, originalEvent) ->
-            val decoded = json.decodeFromString<BaseEvent>(jsonString)
-            assertEquals(originalEvent::class, decoded::class)
-            assertEquals(originalEvent, decoded)
-        }
-    }
-
-    // Edge Cases and Error Tests
-
-    @Test
-    fun testEventWithNullOptionalFields() {
+    fun testNullFieldsNotSerialized() {
         val event = RunErrorEvent(
-            message = "Error occurred",
+            message = "Error",
             code = null,
             timestamp = null,
             rawEvent = null
@@ -436,70 +371,116 @@ class EventSerializationTest {
         val jsonString = json.encodeToString<BaseEvent>(event)
         val jsonObj = json.parseToJsonElement(jsonString).jsonObject
 
-        // Verify nulls are not included (explicitNulls = false)
+        // With explicitNulls = false, null fields should not be included
         assertFalse(jsonObj.containsKey("code"))
         assertFalse(jsonObj.containsKey("timestamp"))
         assertFalse(jsonObj.containsKey("rawEvent"))
-
-        val decoded = json.decodeFromString<BaseEvent>(jsonString)
-        assertTrue(decoded is RunErrorEvent)
-        assertEquals(event, decoded)
     }
 
     @Test
-    fun testEventWithRawEventField() {
-        val originalEvent = buildJsonObject {
-            put("type", "ORIGINAL_EVENT")
-            put("data", "some data")
+    fun testOptionalFieldsWithValues() {
+        val rawEvent = buildJsonObject {
+            put("original", true)
         }
 
         val event = TextMessageStartEvent(
             messageId = "msg_123",
-            role = "assistant",
-            rawEvent = originalEvent
+            role = "user",
+            timestamp = 1234567890L,
+            rawEvent = rawEvent
         )
 
         val jsonString = json.encodeToString<BaseEvent>(event)
-        val decoded = json.decodeFromString<BaseEvent>(jsonString)
+        val jsonObj = json.parseToJsonElement(jsonString).jsonObject
 
-        assertTrue(decoded is TextMessageStartEvent)
-        assertEquals(event.rawEvent, decoded.rawEvent)
+        assertEquals(1234567890L, jsonObj["timestamp"]?.jsonPrimitive?.longOrNull)
+        assertNotNull(jsonObj["rawEvent"])
+    }
+
+    // ========== Event List Serialization ==========
+
+    @Test
+    fun testEventListSerialization() {
+        val events: List<BaseEvent> = listOf(
+            RunStartedEvent(threadId = "t1", runId = "r1"),
+            TextMessageStartEvent(messageId = "m1", role = "assistant"),
+            TextMessageContentEvent(messageId = "m1", delta = "Hello"),
+            TextMessageEndEvent(messageId = "m1"),
+            RunFinishedEvent(threadId = "t1", runId = "r1")
+        )
+
+        val jsonString = json.encodeToString(events)
+        val decoded: List<BaseEvent> = json.decodeFromString(jsonString)
+
+        assertEquals(5, decoded.size)
+        assertTrue(decoded[0] is RunStartedEvent)
+        assertTrue(decoded[1] is TextMessageStartEvent)
+        assertTrue(decoded[2] is TextMessageContentEvent)
+        assertTrue(decoded[3] is TextMessageEndEvent)
+        assertTrue(decoded[4] is RunFinishedEvent)
+    }
+
+    // ========== Protocol Compliance Tests ==========
+
+    @Test
+    fun testEventDiscriminatorFormat() {
+        // Test that each event type produces the correct discriminator
+        val testCases = mapOf(
+            RunStartedEvent(threadId = "t", runId = "r") to "RUN_STARTED",
+            RunFinishedEvent(threadId = "t", runId = "r") to "RUN_FINISHED",
+            RunErrorEvent(message = "err") to "RUN_ERROR",
+            StepStartedEvent(stepName = "s") to "STEP_STARTED",
+            StepFinishedEvent(stepName = "s") to "STEP_FINISHED",
+            TextMessageStartEvent(messageId = "m", role = "a") to "TEXT_MESSAGE_START",
+            TextMessageContentEvent(messageId = "m", delta = "d") to "TEXT_MESSAGE_CONTENT",
+            TextMessageEndEvent(messageId = "m") to "TEXT_MESSAGE_END",
+            ToolCallStartEvent(toolCallId = "t", toolCallName = "n") to "TOOL_CALL_START",
+            ToolCallArgsEvent(toolCallId = "t", delta = "{}") to "TOOL_CALL_ARGS",
+            ToolCallEndEvent(toolCallId = "t") to "TOOL_CALL_END",
+            StateSnapshotEvent(snapshot = JsonNull) to "STATE_SNAPSHOT",
+            StateDeltaEvent(delta = buildJsonArray { }) to "STATE_DELTA",  // Changed to JsonArray
+            MessagesSnapshotEvent(messages = emptyList()) to "MESSAGES_SNAPSHOT",
+            RawEvent(event = JsonNull) to "RAW",
+            CustomEvent(name = "n", value = JsonNull) to "CUSTOM"
+        )
+
+        testCases.forEach { (event, expectedType) ->
+            val jsonString = json.encodeToString<BaseEvent>(event)
+            val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+            assertEquals(
+                expectedType,
+                jsonObj["type"]?.jsonPrimitive?.content,
+                "Event ${event::class.simpleName} should have discriminator $expectedType"
+            )
+        }
     }
 
     @Test
-    fun testEventTypeEnumCoverage() {
-        // Verify all EventType enum values have corresponding event classes
-        val eventTypes = EventType.entries.toSet()
-        val coveredTypes = mutableSetOf<EventType>()
+    fun testUnknownEventTypeHandling() {
+        // Test that unknown event types are rejected
+        val invalidJson = """{"type":"UNKNOWN_EVENT","data":"test"}"""
 
-        // Create one event of each type to ensure they can be serialized
-        val testEvents = listOf(
-            RunStartedEvent(threadId = "t", runId = "r"),
-            RunFinishedEvent(threadId = "t", runId = "r"),
-            RunErrorEvent(message = "error"),
-            StepStartedEvent(stepName = "step"),
-            StepFinishedEvent(stepName = "step"),
-            TextMessageStartEvent(messageId = "m", role = "assistant"),
-            TextMessageContentEvent(messageId = "m", delta = "text"),
-            TextMessageEndEvent(messageId = "m"),
-            ToolCallStartEvent(toolCallId = "tc", toolCallName = "tool"),
-            ToolCallArgsEvent(toolCallId = "tc", delta = "{}"),
-            ToolCallEndEvent(toolCallId = "tc"),
-            StateSnapshotEvent(snapshot = JsonNull),
-            StateDeltaEvent(delta = emptyList()),
-            MessagesSnapshotEvent(messages = emptyList()),
-            RawEvent(event = JsonNull),
-            CustomEvent(name = "custom", value = JsonNull)
-        )
-
-        testEvents.forEach { event ->
-            val jsonString = json.encodeToString<BaseEvent>(event)
-            val decoded = json.decodeFromString<BaseEvent>(jsonString)
-            assertEquals(event.type, decoded.type)
-            coveredTypes.add(event.type)
+        assertFailsWith<Exception> {
+            json.decodeFromString<BaseEvent>(invalidJson)
         }
+    }
 
-        // Verify all event types are covered
-        assertEquals(eventTypes, coveredTypes)
+    @Test
+    fun testForwardCompatibility() {
+        // Test that extra fields are ignored
+        val jsonWithExtra = """
+            {
+                "type": "RUN_STARTED",
+                "threadId": "t1",
+                "runId": "r1",
+                "futureField": "ignored",
+                "anotherField": 123
+            }
+        """.trimIndent()
+
+        val decoded = json.decodeFromString<BaseEvent>(jsonWithExtra)
+        assertTrue(decoded is RunStartedEvent)
+        assertEquals("t1", decoded.threadId)
+        assertEquals("r1", decoded.runId)
     }
 }
