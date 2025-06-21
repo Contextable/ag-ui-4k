@@ -21,4 +21,18 @@ interface ClientTransport {
      * @return A [RunSession] for managing the run lifecycle and receiving events
      */
     suspend fun startRun(message: Message, threadId: String? = null): RunSession
+    
+    /**
+     * Start a new run with multiple messages (full conversation history).
+     * This is useful for stateless agents that need the complete context.
+     * 
+     * @param messages The messages to send (in chronological order)
+     * @param threadId Optional thread ID for conversation continuity. If null, a new thread ID will be generated.
+     * @return A [RunSession] for managing the run lifecycle and receiving events
+     */
+    suspend fun startRunWithMessages(messages: List<Message>, threadId: String? = null): RunSession {
+        // Default implementation: just send the last message
+        // Concrete implementations should override this to send all messages
+        return startRun(messages.lastOrNull() ?: throw IllegalArgumentException("No messages provided"), threadId)
+    }
 }
