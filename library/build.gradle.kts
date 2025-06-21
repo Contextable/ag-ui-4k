@@ -4,7 +4,6 @@ plugins {
     kotlin("multiplatform") version "2.1.21"
     kotlin("plugin.serialization") version "2.1.21"
     id("com.android.library") version "8.7.3"
-    id("io.gitlab.arturbosch.detekt") version "1.23.4"
     id("maven-publish")
     id("signing")
 }
@@ -199,22 +198,4 @@ signing {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-}
-
-// Detekt configuration
-detekt {
-    buildUponDefaultConfig = true
-    config.setFrom("../detekt-config.yml")
-    baseline = file("detekt-baseline.xml")
-    source.setFrom("src")
-}
-
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    reports {
-        html.required.set(true)
-        xml.required.set(true)
-        txt.required.set(true)
-        sarif.required.set(true)
-        md.required.set(true)
-    }
 }
