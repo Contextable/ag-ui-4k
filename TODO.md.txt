@@ -1,0 +1,775 @@
+source
+# AG-UI-4K Architecture Blueprint v3
+
+## Executive Summary
+
+This blueprint defines the architecture for ag-ui-4k, a Kotlin Multiplatform **client library** for connecting to AI agents that implement the Agent User Interaction Protocol (AG-UI). While the library includes an agent framework for completeness, the primary focus is enabling client applications to connect to existing AG-UI agents.
+
+The design separates concerns into distinct modules: core protocol types, transport mechanisms, client implementations, tool execution, and (optionally) agent development framework.
+
+## Core Principles
+
+1. **Separation of Concerns**: Transport, state management, and orchestration are independent
+2. **Distributed Architecture**: Client and Agent can exist on different machines or same process
+3. **Event-Driven State**: All state changes originate from Agent through events
+4. **Immutable Protocol**: The AG-UI wire protocol defines exactly 16 event types
+5. **Implicit Context**: Events within a run don't need explicit run/thread IDs
+6. **Pattern-Based Design**: Events follow consistent patterns (Start-Content-End, Snapshot-Delta, Lifecycle)
+
+## Data Model
+
+### Conversation Hierarchy
+```
+Thread
+  └── Run[]
+       └── Message[]
+```
+
+### Core Types
+```kotlin
+data class Thread(
+    val threadId: String,
+    val runs: List<Run>,
+    val metadata: JsonElement? = null
+) {
+    fun getAllMessages(): List<Message> = runs.flatMap { it.messages }
+}
+
+data class Run(
+    val runId: String,
+    val threadId: String,
+    val messages: List<Message>,
+    val status: RunStatus,
+    val startTime: Instant,
+    val endTime: Instant? = null,
+    val error: RunError? = null,
+    val metadata: JsonElement? = null
+)
+
+enum class RunStatus {
+    STARTED, COMPLETED, ERROR
+}
+
+data class RunError(
+    val message: String,
+    val code: String? = null,
+    val timestamp: Instant
+)
+
+// Global state separate from conversation state
+data class AgentState(
+    val globalState: JsonElement? = null,
+    val threads: Map<String, Thread> = emptyMap(),
+    val currentThreadId: String? = null,
+    val metadata: JsonElement? = null
+)
+```
+
+## Event Model
+
+### Event Taxonomy (16 Total Events)
+```
+AG-UI Protocol Events
+├── Lifecycle Events (5)
+│   ├── RunStartedEvent
+│   ├── RunFinishedEvent
+│   ├── RunErrorEvent
+│   ├── StepStartedEvent
+│   └── StepFinishedEvent
+├── Message Events (4)
+│   ├── TextMessageStartEvent
+│   ├── TextMessageContentEvent
+│   ├── TextMessageEndEvent
+│   └── MessagesSnapshotEvent
+├── Tool Call Events (3)
+│   ├── ToolCallStartEvent
+│   ├── ToolCallArgsEvent
+│   └── ToolCallEndEvent
+├── State Management Events (2)
+│   ├── StateSnapshotEvent
+│   └── StateDeltaEvent
+└── Special Events (2)
+    ├── RawEvent
+    └── CustomEvent
+```
+
+### Event Flow Patterns
+
+1. **Start-Content-End Pattern**: Streaming content (messages, tool calls)
+   - Start event initiates stream
+   - Content events deliver chunks
+   - End event signals completion
+
+2. **Snapshot-Delta Pattern**: State synchronization
+   - Snapshot provides complete state
+   - Delta events provide incremental updates (JSON Patch RFC 6902)
+
+3. **Lifecycle Pattern**: Run and step monitoring
+   - Started events signal beginnings
+   - Finished/Error events signal endings
+
+## Transport Layer
+
+### Core Abstractions
+```kotlin
+interface Transport {
+    // Start a run with an initial message
+    suspend fun startRun(message: Message): RunSession
+}
+
+interface RunSession {
+    // Receive events from this run
+    val events: Flow<BaseEvent>
+    
+    // Send additional messages within the same run (for tool results)
+    suspend fun sendMessage(message: Message)
+    
+    // Check if run is still active
+    val isActive: StateFlow<Boolean>
+}
+
+// Implementations
+class HttpTransport(config: HttpConfig) : Transport
+class WebSocketTransport(config: WsConfig) : Transport
+class InMemoryTransport(private val agent: AbstractAgent) : Transport
+```
+
+## Client Architecture
+
+### Client Hierarchy
+```
+AbstractClient (base class)
+├── StatelessClient    // Just passes events through, no state tracking
+└── StatefulClient     // Maintains conversation state via ClientStateManager
+```
+
+### Base Client
+```kotlin
+abstract class AbstractClient(
+    protected val transport: Transport,
+    protected val stateManager: ClientStateManager? = null,
+    protected val toolExecutor: ToolExecutor? = null
+) {
+    suspend fun send(message: Message): Flow<BaseEvent> = coroutineScope {
+        val session = transport.startRun(message)
+        
+        session.events
+            .onEach { event ->
+                stateManager?.processEvent(event)
+                handleToolCallIfNeeded(event, session)
+            }
+    }
+    
+    private suspend fun handleToolCallIfNeeded(
+        event: BaseEvent,
+        session: RunSession
+    ) {
+        if (event is ToolCallEndEvent && toolExecutor != null) {
+            val toolCall = stateManager?.getToolCall(event.toolCallId)
+            if (toolCall != null && session.isActive.value) {
+                val result = toolExecutor.execute(toolCall)
+                session.sendMessage(ToolMessage(
+                    id = generateMessageId(),
+                    content = result,
+                    toolCallId = event.toolCallId
+                ))
+            }
+        }
+    }
+}
+```
+
+### Stateless Client
+```kotlin
+class StatelessClient(
+    transport: Transport,
+    toolExecutor: ToolExecutor? = null
+) : AbstractClient(transport, null, toolExecutor) {
+    // Simply passes through events without maintaining state
+    // Useful for simple request-response patterns
+}
+```
+
+### Stateful Client
+```kotlin
+class StatefulClient(
+    transport: Transport,
+    stateManager: ClientStateManager,
+    toolExecutor: ToolExecutor? = null
+) : AbstractClient(transport, stateManager, toolExecutor) {
+    // Maintains conversation state
+    // Tracks threads, runs, messages
+    // Handles state synchronization
+    
+    val currentThread: StateFlow<Thread?> = stateManager.currentThread
+    val globalState: StateFlow<JsonElement?> = stateManager.globalState
+}
+```
+
+### Client State Manager
+```kotlin
+interface ClientStateManager {
+    // Observable state
+    val globalState: StateFlow<JsonElement?>
+    val threads: StateFlow<Map<String, Thread>>
+    val currentRun: StateFlow<RunContext?>
+    val currentThread: StateFlow<Thread?>
+    
+    // Special event streams
+    val rawEvents: SharedFlow<RawEvent>
+    val customEvents: SharedFlow<CustomEvent>
+    
+    // Process events from agent
+    fun processEvent(event: BaseEvent)
+    
+    // Query methods
+    fun getThread(threadId: String): Thread?
+    fun getCurrentThread(): Thread?
+    fun getToolCall(toolCallId: String): ToolCall?
+}
+```
+
+### Tool Executor
+```kotlin
+interface ToolExecutor {
+    suspend fun execute(toolCall: ToolCall): String
+}
+
+data class ToolCall(
+    val id: String,
+    val name: String,
+    val arguments: String // JSON string
+)
+
+data class Tool(
+    val name: String,
+    val description: String,
+    val parameters: JsonElement, // JSON Schema
+    val handler: suspend (JsonElement) -> String
+)
+```
+
+## Agent Architecture
+
+### Agent Hierarchy
+```
+AbstractAgent (base class)
+├── StatelessAgent     // Processes each message independently, no state
+├── StatefulAgent      // Maintains state via AgentStateManager
+└── PatternAwareAgent  // Helper base class with event emission utilities
+    ├── Can be extended by StatelessAgent
+    └── Can be extended by StatefulAgent
+```
+
+### Base Agent
+```kotlin
+abstract class AbstractAgent {
+    // Process a message and emit events
+    abstract suspend fun run(message: Message): Flow<BaseEvent>
+}
+```
+
+### Stateless Agent
+```kotlin
+abstract class StatelessAgent : AbstractAgent() {
+    // Processes each message independently
+    // No conversation history or state
+    // Each run is isolated
+    
+    // Example implementation:
+    override suspend fun run(message: Message): Flow<BaseEvent> = flow {
+        emit(RunStartedEvent(generateThreadId(), generateRunId()))
+        
+        // Process message without any context
+        val response = processMessage(message)
+        
+        // Emit response
+        emitMessage(response)
+        
+        emit(RunFinishedEvent(threadId, runId))
+    }
+    
+    protected abstract suspend fun processMessage(message: Message): String
+}
+```
+
+### Stateful Agent
+```kotlin
+abstract class StatefulAgent(
+    protected val stateManager: AgentStateManager
+) : AbstractAgent() {
+    // Maintains conversation state
+    // Can access history, maintain context
+    // Coordinates with AgentStateManager
+    
+    override suspend fun run(message: Message): Flow<BaseEvent> = flow {
+        val thread = stateManager.getOrCreateThread(determineThreadId(message))
+        emitAll(stateManager.startRun(thread.threadId, generateRunId()))
+        
+        // Process with full context
+        val response = processWithContext(
+            message, 
+            thread, 
+            stateManager.state.value
+        )
+        
+        emitAll(response)
+        emitAll(stateManager.completeRun(RunStatus.COMPLETED))
+    }
+    
+    protected abstract suspend fun processWithContext(
+        message: Message,
+        thread: Thread,
+        state: AgentState
+    ): Flow<BaseEvent>
+}
+```
+
+### Pattern-Aware Agent (Helper Base Class)
+```kotlin
+abstract class PatternAwareAgent : AbstractAgent() {
+    // Helper methods for proper event patterns
+    
+    protected fun emitMessage(
+        messageId: String,
+        role: String,
+        content: String,
+        chunkSize: Int = 100
+    ): Flow<BaseEvent> = flow {
+        emit(TextMessageStartEvent(messageId, role))
+        
+        content.chunked(chunkSize).forEach { chunk ->
+            emit(TextMessageContentEvent(messageId, chunk))
+            delay(10) // Simulate streaming
+        }
+        
+        emit(TextMessageEndEvent(messageId))
+    }
+    
+    protected fun emitToolCall(
+        toolCallId: String,
+        toolName: String,
+        arguments: JsonElement,
+        parentMessageId: String? = null
+    ): Flow<BaseEvent> = flow {
+        emit(ToolCallStartEvent(toolCallId, toolName, parentMessageId))
+        
+        val argsJson = Json.encodeToString(arguments)
+        argsJson.chunked(50).forEach { chunk ->
+            emit(ToolCallArgsEvent(toolCallId, chunk))
+        }
+        
+        emit(ToolCallEndEvent(toolCallId))
+    }
+    
+    protected fun emitStateUpdate(
+        currentState: JsonElement,
+        newState: JsonElement
+    ): Flow<BaseEvent> = flow {
+        val patches = createJsonPatch(currentState, newState)
+        if (patches.isNotEmpty()) {
+            emit(StateDeltaEvent(patches))
+        }
+    }
+}
+```
+
+### Example Implementations
+
+#### Simple Echo Agent (Stateless)
+```kotlin
+class EchoAgent : StatelessAgent() {
+    override suspend fun processMessage(message: Message): String {
+        return "Echo: ${message.content}"
+    }
+}
+```
+
+#### Context-Aware Chat Agent (Stateful + Pattern-Aware)
+```kotlin
+class ChatAgent(
+    stateManager: AgentStateManager
+) : StatefulAgent(stateManager), PatternAwareAgent {
+    
+    override suspend fun processWithContext(
+        message: Message,
+        thread: Thread,
+        state: AgentState
+    ): Flow<BaseEvent> = flow {
+        val messageId = generateMessageId()
+        
+        // Use pattern-aware helper
+        emitAll(emitMessage(
+            messageId,
+            "assistant",
+            "I see you have ${thread.messages.size} messages in this conversation."
+        ))
+        
+        // Update state
+        val newState = state.copy(
+            metadata = buildJsonObject {
+                put("lastProcessed", Clock.System.now().toString())
+            }
+        )
+        emitAll(stateManager.updateGlobalState { newState })
+    }
+}
+```
+
+### Agent State Manager
+```kotlin
+interface AgentStateManager {
+    val state: StateFlow<AgentState>
+    
+    // State mutations that produce events
+    fun startRun(threadId: String, runId: String): Flow<BaseEvent>
+    fun addMessage(message: Message): Flow<BaseEvent>
+    fun updateGlobalState(update: (JsonElement?) -> JsonElement): Flow<BaseEvent>
+    fun completeRun(status: RunStatus): Flow<BaseEvent>
+    
+    // Direct state access
+    fun getOrCreateThread(threadId: String): Thread
+    fun getCurrentMessages(threadId: String): List<Message>
+}
+```
+
+## State Management Implementation
+
+### Pattern-Aware State Manager
+```kotlin
+class DefaultClientStateManager : ClientStateManager {
+    // Stream builders for Start-Content-End pattern
+    private val messageStreams = mutableMapOf<String, MessageStreamBuilder>()
+    private val toolCallStreams = mutableMapOf<String, ToolCallStreamBuilder>()
+    
+    // State for Snapshot-Delta pattern
+    private val _globalState = MutableStateFlow<JsonElement?>(null)
+    private val stateVersion = AtomicLong(0)
+    
+    // Lifecycle tracking
+    private val activeRuns = mutableMapOf<String, RunContext>()
+    private val activeSteps = mutableSetOf<String>()
+    
+    // Thread management
+    private val _threads = MutableStateFlow<Map<String, Thread>>(emptyMap())
+    
+    // Special events
+    private val _rawEvents = MutableSharedFlow<RawEvent>()
+    private val _customEvents = MutableSharedFlow<CustomEvent>()
+    
+    // Out-of-order resilience
+    private val eventBuffer = mutableListOf<BufferedEvent>()
+    private val bufferTimeout = 5.seconds
+    
+    override fun processEvent(event: BaseEvent) {
+        when {
+            canProcessImmediately(event) -> processEventInternal(event)
+            shouldBuffer(event) -> bufferEvent(event)
+            else -> logger.warn("Dropping out-of-sequence event: ${event.type}")
+        }
+    }
+}
+```
+
+### Helper Types
+```kotlin
+data class MessageStreamBuilder(
+    val id: String,
+    val role: Role,
+    val startTime: Instant,
+    val contentParts: MutableList<ContentPart>,
+    var isComplete: Boolean,
+    val isProvisional: Boolean = false
+)
+
+data class ToolCallStreamBuilder(
+    val id: String,
+    val name: String,
+    val startTime: Instant,
+    val argsParts: MutableList<ContentPart>,
+    var isComplete: Boolean,
+    val parentMessageId: String? = null
+)
+
+data class ContentPart(
+    val content: String,
+    val receivedAt: Instant
+)
+
+data class RunContext(
+    val threadId: String,
+    val runId: String,
+    val messages: MutableList<Message>,
+    val startTime: Instant,
+    var status: RunStatus = RunStatus.STARTED
+)
+```
+
+## Implementation Patterns
+
+### 1. Stateless Client + Stateless Agent
+```kotlin
+// Client side
+val transport = HttpTransport(config)
+val client = StatelessClient(transport)
+val events = client.send(UserMessage("1", "Hello"))
+
+// Agent side
+class SimpleAgent : StatelessAgent() {
+    override suspend fun processMessage(message: Message): String {
+        return "Response to: ${message.content}"
+    }
+}
+```
+
+### 2. Stateless Client + Stateful Agent (Most Common)
+```kotlin
+// Client side (simple, no state tracking)
+val transport = HttpTransport(config)
+val client = StatelessClient(transport)
+
+// Agent side (maintains conversation context)
+class ConversationAgent(
+    stateManager: AgentStateManager
+) : StatefulAgent(stateManager) {
+    override suspend fun processWithContext(
+        message: Message,
+        thread: Thread,
+        state: AgentState
+    ): Flow<BaseEvent> = flow {
+        // Access full conversation history
+        val previousMessages = thread.getAllMessages()
+        // Generate contextual response
+    }
+}
+```
+
+### 3. Stateful Client + Stateless Agent
+```kotlin
+// Client side (tracks conversation)
+val stateManager = DefaultClientStateManager()
+val client = StatefulClient(transport, stateManager)
+
+// Access conversation state on client
+val thread = client.currentThread.value
+
+// Agent side (simple echo)
+class EchoAgent : StatelessAgent() {
+    override suspend fun processMessage(message: Message): String = message.content
+}
+```
+
+### 4. In-Memory Communication
+```kotlin
+val agentStateManager = DefaultAgentStateManager()
+val agent = ConversationAgent(agentStateManager)
+val transport = InMemoryTransport(agent)
+
+val clientStateManager = DefaultClientStateManager()
+val client = StatefulClient(transport, clientStateManager)
+```
+
+## Error Handling Strategy
+
+1. **Transport Errors**: Retry with exponential backoff
+2. **Parsing Errors**: Log and continue processing
+3. **State Errors**: Request snapshot refresh
+4. **Tool Errors**: Return error as tool result
+5. **Out-of-Order Events**: Buffer with timeout
+
+## Module Structure
+
+The library is organized into five distinct modules, prioritized for client-side development:
+
+### 1. Core Module (Foundation)
+```
+agui4k-core/
+├── types/          # Protocol types (events, messages, etc.)
+├── serialization/  # JSON serialization configuration
+└── protocol/       # Protocol constants and enums
+```
+
+**Purpose**: Defines all AG-UI protocol types and serialization. No external dependencies except kotlinx.serialization.
+
+### 2. Transport Module (Communication Layer)
+```
+agui4k-transport/
+├── Transport.kt         # Core transport interface
+├── RunSession.kt        # Session abstraction
+├── HttpTransport.kt     # HTTP/SSE implementation
+├── WebSocketTransport.kt # WebSocket implementation
+└── InMemoryTransport.kt # Direct in-memory communication
+```
+
+**Purpose**: Handles communication with AG-UI agents. Depends on core module and Ktor.
+
+### 3. Client Module (Primary User-Facing API)
+```
+agui4k-client/
+├── AbstractClient.kt      # Base client class
+├── StatelessClient.kt     # Simple pass-through client
+├── StatefulClient.kt      # State-tracking client
+├── ClientStateManager.kt  # Client-side state management
+└── ClientBuilder.kt       # Fluent API for client creation
+```
+
+**Purpose**: Main API for client applications. This is what most users will interact with.
+
+### 4. Tools Module (Tool Execution Framework)
+```
+agui4k-tools/
+├── ToolExecutor.kt       # Tool execution interface
+├── ToolRegistry.kt       # Tool registration and discovery
+├── ToolCall.kt          # Tool call data structures
+└── handlers/            # Common tool handlers
+    ├── ConfirmationHandler.kt
+    └── FileAccessHandler.kt
+```
+
+**Purpose**: Framework for handling tool calls from agents. Optional but commonly needed.
+
+### 5. Agent Module (Agent Development Framework)
+```
+agui4k-agent/
+├── AbstractAgent.kt      # Base agent class
+├── StatelessAgent.kt     # Simple agent implementation
+├── StatefulAgent.kt      # State-aware agent
+├── PatternAwareAgent.kt  # Event emission helpers
+├── AgentStateManager.kt  # Agent-side state management
+└── examples/            # Example agent implementations
+```
+
+**Purpose**: Framework for implementing AG-UI agents in Kotlin. Lower priority since most users will connect to existing agents.
+
+## Library Dependencies
+
+### Core Module
+- **kotlinx.serialization**: JSON handling
+- **kotlinx.datetime**: Time handling
+
+### Transport Module
+- **agui4k-core**: Core types
+- **ktor-client-core**: HTTP client
+- **ktor-client-sse**: Server-Sent Events
+- **kotlinx.coroutines**: Async programming
+
+### Client Module
+- **agui4k-core**: Core types
+- **agui4k-transport**: Transport layer
+- **kotlinx.coroutines**: Flow-based APIs
+- **kotlin-logging**: Logging
+
+### Tools Module
+- **agui4k-core**: Core types
+- **kotlinx.coroutines**: Async execution
+
+### Agent Module
+- **agui4k-core**: Core types
+- **kotlinx.coroutines**: Event flows
+- **kotlin-json-patch**: State delta generation
+
+## Implementation Checklist (Priority Order)
+
+### Phase 1: Core Module ⭐ HIGHEST PRIORITY
+- [ ] Define all event types (16 total)
+- [ ] Define message types with proper serialization
+- [ ] Define state types (Thread, Run, etc.)
+- [ ] Create AG-UI JSON serialization configuration
+- [ ] Add comprehensive tests for serialization/deserialization
+
+### Phase 2: Transport Module ⭐ HIGH PRIORITY
+- [ ] Define Transport interface
+- [ ] Define RunSession abstraction
+- [ ] Implement HTTP transport with SSE support
+- [ ] Add comprehensive error handling
+- [ ] Create transport tests with mock servers
+- [ ] WebSocket transport (future enhancement)
+
+### Phase 3: Client Module ⭐ HIGH PRIORITY
+- [ ] AbstractClient base class
+- [ ] StatelessClient implementation
+- [ ] StatefulClient implementation
+- [ ] ClientStateManager interface and default implementation
+- [ ] Pattern-aware event processing
+- [ ] Out-of-order event handling
+- [ ] Fluent ClientBuilder API
+- [ ] Comprehensive client tests
+
+### Phase 4: Tools Module ⭐ MEDIUM PRIORITY
+- [ ] ToolExecutor interface
+- [ ] ToolRegistry for tool management
+- [ ] Built-in tool handlers (confirmation, file access)
+- [ ] Tool execution lifecycle management
+- [ ] Error handling for tool failures
+- [ ] Tool testing framework
+
+### Phase 5: Agent Module ⭐ LOWER PRIORITY
+- [ ] AbstractAgent base
+- [ ] StatelessAgent implementation
+- [ ] StatefulAgent implementation
+- [ ] PatternAwareAgent helpers
+- [ ] AgentStateManager interface
+- [ ] Example agents (echo, chat, etc.)
+- [ ] Agent testing utilities
+
+### Phase 6: Platform-Specific Features
+- [ ] Android-specific optimizations
+- [ ] iOS-specific optimizations
+- [ ] JVM-specific features
+- [ ] JS/Browser support (future)
+
+### Phase 7: Documentation & Examples
+- [ ] API documentation for each module
+- [ ] Getting started guide for clients
+- [ ] Tool development guide
+- [ ] Agent development guide (lower priority)
+- [ ] Migration guide from v1
+- [ ] Example applications
+
+## Why Client-First?
+
+The ag-ui-4k library prioritizes client development for several reasons:
+
+1. **Market Demand**: Most developers want to connect their applications TO existing AI agents (OpenAI, Anthropic, etc.) rather than implement agents themselves.
+
+2. **Ecosystem Growth**: A robust client library enables the AG-UI ecosystem to grow by making it easy to integrate with AG-UI agents.
+
+3. **Complexity Gradient**: Client development is simpler than agent development, allowing developers to start using AG-UI quickly.
+
+4. **Agent Diversity**: Agents are often implemented in Python, JavaScript, or other languages better suited for AI workloads. Kotlin clients can connect to these agents.
+
+5. **Mobile Focus**: Kotlin's strength in Android/iOS development makes it ideal for mobile clients connecting to cloud-hosted agents.
+
+The agent framework is included for completeness and for scenarios like:
+- Testing client implementations
+- Building proxy/gateway agents
+- Implementing simple agents for edge devices
+- Educational purposes
+
+## Design Decisions
+
+### Thread ID Generation
+- **Primary**: Client provides thread ID in RunAgentInput
+- **Fallback**: Agent generates thread ID if client doesn't provide one
+- **Pattern**: Client should maintain thread IDs for conversation continuity
+- **New Conversations**: Client can omit thread ID to start fresh
+
+### Run ID Generation
+- **Responsibility**: Always generated by the Agent
+- **Uniqueness**: Must be unique within the Agent's context
+- **Format**: Implementation-specific (UUID, timestamp-based, etc.)
+
+## Open Design Questions
+
+1. **Message ID Format**: UUID vs timestamp-based?
+2. **State Persistence**: Repository interface design
+3. **Backpressure**: Flow buffer strategies
+4. **Cancellation**: Graceful shutdown patterns
+
+## Migration Strategy
+
+Since there are no current users:
+- Complete API redesign is acceptable
+- No backward compatibility needed
+- Focus on optimal architecture
+- Learn from v1 limitations
