@@ -34,8 +34,10 @@ kotlin {
     // Android target
     androidTarget {
         compilations.all {
-            kotlinOptions {
-                jvmTarget = "11"
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+                }
             }
         }
         publishLibraryVariants("release")
@@ -44,8 +46,10 @@ kotlin {
     // JVM target
     jvm {
         compilations.all {
-            kotlinOptions {
-                jvmTarget = "11"
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+                }
             }
         }
         testRuns["test"].executionTask.configure {
@@ -82,7 +86,7 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 // Android-specific file system APIs
-                implementation("androidx.core:core-ktx:1.12.0")
+                implementation(libs.core.ktx)
             }
         }
         
@@ -106,13 +110,13 @@ kotlin {
 
 android {
     namespace = "com.contextable.agui4k.tools.builtin"
-    compileSdk = 35
+    compileSdk = 36
     
     defaultConfig {
         minSdk = 21
     }
     
-    buildToolsVersion = "35.0.0"
+    buildToolsVersion = "36.0.0"
     
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
