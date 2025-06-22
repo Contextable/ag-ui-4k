@@ -1,6 +1,6 @@
-package com.contextable.agui4k.client.model
+package com.contextable.agui4k.sample.client.model
 
-import com.contextable.agui4k.client.data.model.*
+import com.contextable.agui4k.sample.client.data.model.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString

@@ -1,10 +1,10 @@
-package com.contextable.agui4k.client
+package com.contextable.agui4k.sample.client
 
 import androidx.compose.runtime.Composable
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
-import com.contextable.agui4k.client.ui.screens.chat.ChatScreen
-import com.contextable.agui4k.client.ui.theme.AgentChatTheme
+import com.contextable.agui4k.sample.client.ui.screens.chat.ChatScreen
+import com.contextable.agui4k.sample.client.ui.theme.AgentChatTheme
 
 @Composable
 fun App() {

@@ -1,10 +1,10 @@
-package com.contextable.agui4k.client.ui
+package com.contextable.agui4k.sample.client.ui
 
 import androidx.compose.ui.test.*
-import com.contextable.agui4k.client.ui.screens.chat.DisplayMessage
-import com.contextable.agui4k.client.ui.screens.chat.MessageRole
-import com.contextable.agui4k.client.ui.screens.chat.components.MessageBubble
-import com.contextable.agui4k.client.ui.theme.AgentChatTheme
+import com.contextable.agui4k.sample.client.ui.screens.chat.DisplayMessage
+import com.contextable.agui4k.sample.client.ui.screens.chat.MessageRole
+import com.contextable.agui4k.sample.client.ui.screens.chat.components.MessageBubble
+import com.contextable.agui4k.sample.client.ui.theme.AgentChatTheme
 import kotlin.test.Test
 
 @OptIn(ExperimentalTestApi::class)

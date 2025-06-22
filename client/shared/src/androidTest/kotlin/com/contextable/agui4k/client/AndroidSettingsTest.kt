@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client
+package com.contextable.agui4k.sample.client
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4

@@ -1,11 +1,11 @@
-package com.contextable.agui4k.client.test
+package com.contextable.agui4k.sample.client.test
 
 import cafe.adriel.voyager.core.model.ScreenModel
-import com.contextable.agui4k.client.ui.screens.chat.ChatState
-import com.contextable.agui4k.client.ui.screens.chat.DisplayMessage
-import com.contextable.agui4k.client.ui.screens.chat.MessageRole
-import com.contextable.agui4k.client.data.model.AgentConfig
-import com.contextable.agui4k.client.data.model.AuthMethod
+import com.contextable.agui4k.sample.client.ui.screens.chat.ChatState
+import com.contextable.agui4k.sample.client.ui.screens.chat.DisplayMessage
+import com.contextable.agui4k.sample.client.ui.screens.chat.MessageRole
+import com.contextable.agui4k.sample.client.data.model.AgentConfig
+import com.contextable.agui4k.sample.client.data.model.AuthMethod
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

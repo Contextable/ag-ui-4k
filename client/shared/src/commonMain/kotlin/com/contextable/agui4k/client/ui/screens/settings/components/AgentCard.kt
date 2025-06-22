@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client.ui.screens.settings.components
+package com.contextable.agui4k.sample.client.ui.screens.settings.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -9,8 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.contextable.agui4k.client.data.model.AgentConfig
-import com.contextable.agui4k.client.data.model.AuthMethod
+import com.contextable.agui4k.sample.client.data.model.AgentConfig
+import com.contextable.agui4k.sample.client.data.model.AuthMethod
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource

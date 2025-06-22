@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client.util
+package com.contextable.agui4k.sample.client.util
 
 import android.content.Context
 import com.russhwolf.settings.Settings

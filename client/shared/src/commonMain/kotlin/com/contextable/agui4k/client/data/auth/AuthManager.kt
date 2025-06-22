@@ -1,6 +1,6 @@
-package com.contextable.agui4k.client.data.auth
+package com.contextable.agui4k.sample.client.data.auth
 
-import com.contextable.agui4k.client.data.model.AuthMethod
+import com.contextable.agui4k.sample.client.data.model.AuthMethod
 
 /**
  * Manages authentication providers and delegates auth operations.
@@ -17,7 +17,8 @@ class AuthManager {
     }
     
     fun registerProvider(provider: AuthProvider) {
-        providers.add(provider)
+        // Add custom providers at the beginning to give them priority over default providers
+        providers.add(0, provider)
     }
     
     suspend fun applyAuth(authMethod: AuthMethod, headers: MutableMap<String, String>) {

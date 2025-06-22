@@ -1,10 +1,10 @@
-package com.contextable.agui4k.client.ui.screens.settings
+package com.contextable.agui4k.sample.client.ui.screens.settings
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import com.contextable.agui4k.client.data.model.AgentConfig
-import com.contextable.agui4k.client.data.repository.AgentRepository
-import com.contextable.agui4k.client.util.getPlatformSettings
+import com.contextable.agui4k.sample.client.data.model.AgentConfig
+import com.contextable.agui4k.sample.client.data.repository.AgentRepository
+import com.contextable.agui4k.sample.client.util.getPlatformSettings
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 

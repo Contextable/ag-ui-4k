@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client.util
+package com.contextable.agui4k.sample.client.util
 
 import org.jetbrains.compose.resources.StringResource
 import agui4kclient.shared.generated.resources.*
@@ -44,14 +44,14 @@ object StringResourceProvider {
     }
 
     // Auth method labels
-    fun getAuthMethodLabel(authMethod: com.contextable.agui4k.client.data.model.AuthMethod): String {
+    fun getAuthMethodLabel(authMethod: com.contextable.agui4k.sample.client.data.model.AuthMethod): String {
         return when (authMethod) {
-            is com.contextable.agui4k.client.data.model.AuthMethod.None -> "No Authentication"
-            is com.contextable.agui4k.client.data.model.AuthMethod.ApiKey -> "API Key"
-            is com.contextable.agui4k.client.data.model.AuthMethod.BearerToken -> "Bearer Token"
-            is com.contextable.agui4k.client.data.model.AuthMethod.BasicAuth -> "Basic Auth"
-            is com.contextable.agui4k.client.data.model.AuthMethod.OAuth2 -> "OAuth 2.0"
-            is com.contextable.agui4k.client.data.model.AuthMethod.Custom -> "Custom"
+            is com.contextable.agui4k.sample.client.data.model.AuthMethod.None -> "No Authentication"
+            is com.contextable.agui4k.sample.client.data.model.AuthMethod.ApiKey -> "API Key"
+            is com.contextable.agui4k.sample.client.data.model.AuthMethod.BearerToken -> "Bearer Token"
+            is com.contextable.agui4k.sample.client.data.model.AuthMethod.BasicAuth -> "Basic Auth"
+            is com.contextable.agui4k.sample.client.data.model.AuthMethod.OAuth2 -> "OAuth 2.0"
+            is com.contextable.agui4k.sample.client.data.model.AuthMethod.Custom -> "Custom"
         }
     }
 }

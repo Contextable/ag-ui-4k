@@ -1,7 +1,7 @@
-package com.contextable.agui4k.client
+package com.contextable.agui4k.sample.client
 
-import com.contextable.agui4k.client.data.model.AgentConfig
-import com.contextable.agui4k.client.data.model.AuthMethod
+import com.contextable.agui4k.sample.client.data.model.AgentConfig
+import com.contextable.agui4k.sample.client.data.model.AuthMethod
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
@@ -103,25 +103,30 @@ class SimpleWorkingTest {
 
     @Test
     fun testAgentConfigEquality() {
+        val now = kotlinx.datetime.Clock.System.now()
+        
         val agent1 = AgentConfig(
             id = "same-id",
             name = "Agent",
             url = "https://test.com",
-            authMethod = AuthMethod.None()
+            authMethod = AuthMethod.None(),
+            createdAt = now
         )
 
         val agent2 = AgentConfig(
             id = "same-id",
             name = "Agent",
             url = "https://test.com",
-            authMethod = AuthMethod.None()
+            authMethod = AuthMethod.None(),
+            createdAt = now
         )
 
         val agent3 = AgentConfig(
             id = "different-id",
             name = "Agent",
             url = "https://test.com",
-            authMethod = AuthMethod.None()
+            authMethod = AuthMethod.None(),
+            createdAt = now
         )
 
         // Test data class equality

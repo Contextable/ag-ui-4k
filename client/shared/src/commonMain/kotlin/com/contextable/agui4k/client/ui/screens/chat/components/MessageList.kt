@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client.ui.screens.chat.components
+package com.contextable.agui4k.sample.client.ui.screens.chat.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,7 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.contextable.agui4k.client.ui.screens.chat.DisplayMessage
+import com.contextable.agui4k.sample.client.ui.screens.chat.DisplayMessage
 import kotlinx.coroutines.launch
 
 @Composable

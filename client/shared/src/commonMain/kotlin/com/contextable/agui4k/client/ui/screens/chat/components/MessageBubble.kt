@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client.ui.screens.chat.components
+package com.contextable.agui4k.sample.client.ui.screens.chat.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -17,8 +17,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.contextable.agui4k.client.ui.screens.chat.DisplayMessage
-import com.contextable.agui4k.client.ui.screens.chat.MessageRole
+import com.contextable.agui4k.sample.client.ui.screens.chat.DisplayMessage
+import com.contextable.agui4k.sample.client.ui.screens.chat.MessageRole
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime

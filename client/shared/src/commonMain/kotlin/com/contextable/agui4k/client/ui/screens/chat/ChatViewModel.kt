@@ -1,15 +1,20 @@
-package com.contextable.agui4k.client.ui.screens.chat
+package com.contextable.agui4k.sample.client.ui.screens.chat
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import com.contextable.agui4k.client.HttpAgent
-import com.contextable.agui4k.client.HttpAgentConfig
-import com.contextable.agui4k.client.data.auth.AuthManager
-import com.contextable.agui4k.client.data.model.AgentConfig
-import com.contextable.agui4k.client.data.repository.AgentRepository
+import com.contextable.agui4k.client.StatefulClient
+import com.contextable.agui4k.transport.HttpClientTransport
+import com.contextable.agui4k.tools.DefaultToolRegistry
+import com.contextable.agui4k.tools.builtin.ConfirmationToolExecutor
+import com.contextable.agui4k.tools.builtin.ConfirmationHandler
+import com.contextable.agui4k.tools.builtin.ConfirmationRequest
+import com.contextable.agui4k.transport.HttpClientTransportConfig
+import com.contextable.agui4k.sample.client.data.auth.AuthManager
+import com.contextable.agui4k.sample.client.data.model.AgentConfig
+import com.contextable.agui4k.sample.client.data.repository.AgentRepository
 import com.contextable.agui4k.core.types.*
-import com.contextable.agui4k.client.util.getPlatformSettings
-import com.contextable.agui4k.client.util.Strings
+import com.contextable.agui4k.sample.client.util.getPlatformSettings
+import com.contextable.agui4k.sample.client.util.Strings
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -69,8 +74,9 @@ class ChatViewModel : ScreenModel {
     private val _state = MutableStateFlow(ChatState())
     val state: StateFlow<ChatState> = _state.asStateFlow()
 
-    private var currentAgent: HttpAgent? = null
+    private var currentClient: StatefulClient? = null
     private var currentJob: Job? = null
+    private var currentThreadId: String? = null
     private val streamingMessages = mutableMapOf<String, StringBuilder>()
 
     init {
@@ -136,14 +142,32 @@ class ChatViewModel : ScreenModel {
             val headers = agentConfig.customHeaders.toMutableMap()
             authManager.applyAuth(agentConfig.authMethod, headers)
 
-            // Create new agent client
-            currentAgent = HttpAgent(
-                HttpAgentConfig(
-                    url = agentConfig.url,
-                    headers = headers,
-                    description = agentConfig.description
-                )
+            // Create new HTTP transport
+            val transportConfig = HttpClientTransportConfig(
+                url = agentConfig.url,
+                headers = headers
             )
+            val transport = HttpClientTransport(transportConfig)
+            
+            // Create tool registry with built-in tools
+            val toolRegistry = DefaultToolRegistry().apply {
+                // Register confirmation tool with a handler that integrates with our UI
+                val confirmationHandler = object : ConfirmationHandler {
+                    override suspend fun requestConfirmation(request: ConfirmationRequest): Boolean {
+                        // The UI will handle showing the dialog - we'll wait for the response
+                        // For now, always return false to prevent automatic execution
+                        // The actual confirmation is handled via the UI dialog
+                        return false
+                    }
+                }
+                registerTool(ConfirmationToolExecutor(confirmationHandler))
+            }
+            
+            // Create new stateful client
+            currentClient = StatefulClient(transport, toolRegistry = toolRegistry)
+            
+            // Generate new thread ID for this session
+            currentThreadId = "thread_${Clock.System.now().toEpochMilliseconds()}"
 
             _state.update { it.copy(isConnected = true, error = null) }
 
@@ -169,7 +193,8 @@ class ChatViewModel : ScreenModel {
     private fun disconnectFromAgent() {
         currentJob?.cancel()
         currentJob = null
-        currentAgent = null
+        currentClient = null
+        currentThreadId = null
         streamingMessages.clear()
         toolCallBuffer.clear()
         pendingToolCalls.clear()
@@ -184,37 +209,32 @@ class ChatViewModel : ScreenModel {
     }
 
     fun sendMessage(content: String) {
-        if (content.isBlank() || currentAgent == null) return
-
-        val userMessage = UserMessage(
-            id = generateMessageId(),
-            content = content.trim()
-        )
+        if (content.isBlank() || currentClient == null) return
 
         // Add user message to display
         addDisplayMessage(
             DisplayMessage(
-                id = userMessage.id,
+                id = generateMessageId(),
                 role = MessageRole.USER,
-                content = userMessage.content
+                content = content.trim()
             )
         )
 
-        // Add to agent
-        currentAgent?.addMessage(userMessage)
-
-        // Start agent response
-        runAgent()
+        // Start conversation with stateful client
+        startConversation(content.trim())
     }
 
-    private fun runAgent() {
+    private fun startConversation(content: String) {
         currentJob?.cancel()
 
         currentJob = screenModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
             try {
-                currentAgent?.runAgent()?.collect { event ->
+                currentClient?.continueConversation(
+                    content = content,
+                    threadId = currentThreadId
+                )?.collect { event ->
                     handleAgentEvent(event)
                 }
             } catch (e: Exception) {
@@ -238,7 +258,7 @@ class ChatViewModel : ScreenModel {
         }
     }
 
-    private fun handleAgentEvent(event: BaseEvent) {
+    internal fun handleAgentEvent(event: BaseEvent) {
         logger.debug { "Handling event: ${event::class.simpleName}" }
 
         when (event) {
@@ -390,41 +410,45 @@ class ChatViewModel : ScreenModel {
     fun confirmAction() {
         val confirmation = _state.value.pendingConfirmation ?: return
 
-        // Create tool result message
-        val toolMessage = ToolMessage(
-            id = generateMessageId(),
-            content = """{"status": "confirmed", "user_response": "approved", "timestamp": "${Clock.System.now()}"}""",
-            toolCallId = confirmation.toolCallId
-        )
-
-        // Add to agent's message history
-        currentAgent?.addMessage(toolMessage)
+        // Send tool response through stateful client
+        screenModelScope.launch {
+            try {
+                currentClient?.sendToolResponse(
+                    threadId = currentThreadId ?: return@launch,
+                    toolCallId = confirmation.toolCallId,
+                    content = """{"status": "confirmed", "user_response": "approved", "timestamp": "${Clock.System.now()}"}"""
+                )?.collect { event ->
+                    handleAgentEvent(event)
+                }
+            } catch (e: Exception) {
+                logger.error(e) { "Error sending tool response" }
+            }
+        }
 
         // Clear the confirmation dialog
         _state.update { it.copy(pendingConfirmation = null) }
-
-        // Continue the conversation
-        runAgent()
     }
 
     fun rejectAction() {
         val confirmation = _state.value.pendingConfirmation ?: return
 
-        // Create tool result message
-        val toolMessage = ToolMessage(
-            id = generateMessageId(),
-            content = """{"status": "rejected", "user_response": "cancelled", "timestamp": "${Clock.System.now()}"}""",
-            toolCallId = confirmation.toolCallId
-        )
-
-        // Add to agent's message history
-        currentAgent?.addMessage(toolMessage)
+        // Send tool response through stateful client
+        screenModelScope.launch {
+            try {
+                currentClient?.sendToolResponse(
+                    threadId = currentThreadId ?: return@launch,
+                    toolCallId = confirmation.toolCallId,
+                    content = """{"status": "rejected", "user_response": "cancelled", "timestamp": "${Clock.System.now()}"}"""
+                )?.collect { event ->
+                    handleAgentEvent(event)
+                }
+            } catch (e: Exception) {
+                logger.error(e) { "Error sending tool response" }
+            }
+        }
 
         // Clear the confirmation dialog
         _state.update { it.copy(pendingConfirmation = null) }
-
-        // Continue the conversation
-        runAgent()
     }
 
     private fun updateStreamingMessage(messageId: String, delta: String) {
@@ -474,7 +498,7 @@ class ChatViewModel : ScreenModel {
 
     fun cancelCurrentOperation() {
         currentJob?.cancel()
-        currentAgent?.abortRun()
+        // Note: StatefulClient doesn't have abortRun - we rely on job cancellation
         _state.update { it.copy(isLoading = false) }
         finalizeStreamingMessages()
         // Clear ephemeral messages on cancel

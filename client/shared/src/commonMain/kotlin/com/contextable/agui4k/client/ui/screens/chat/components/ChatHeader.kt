@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client.ui.screens.chat.components
+package com.contextable.agui4k.sample.client.ui.screens.chat.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons

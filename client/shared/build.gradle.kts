@@ -27,8 +27,12 @@ kotlin {
                 implementation(compose.components.resources)
                 implementation(compose.components.uiToolingPreview)
 
-                // ag-ui-4k library
-                implementation("com.contextable:ag-ui-4k:0.1.6")
+                // ag-ui-4k library - new multi-module structure
+                implementation("com.contextable.agui4k:agui4k-core:0.1.6")
+                implementation("com.contextable.agui4k:agui4k-transport:0.1.6")
+                implementation("com.contextable.agui4k:agui4k-client:0.1.6")
+                implementation("com.contextable.agui4k:agui4k-tools:0.1.6")
+                implementation("com.contextable.agui4k:agui4k-tools-builtin:0.1.6")
 
                 // Navigation
                 implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")
@@ -109,7 +113,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.contextable.agui4k.client"
+    namespace = "com.contextable.agui4k.sample.client"
     compileSdk = 36
 
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")

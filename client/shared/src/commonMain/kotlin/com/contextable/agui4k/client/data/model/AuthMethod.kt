@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client.data.model
+package com.contextable.agui4k.sample.client.data.model
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName

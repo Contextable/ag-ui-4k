@@ -1,11 +1,11 @@
-package com.contextable.agui4k.client.viewmodel
+package com.contextable.agui4k.sample.client.viewmodel
 
-import com.contextable.agui4k.client.ui.screens.chat.MessageRole
-import com.contextable.agui4k.client.data.model.AgentConfig
-import com.contextable.agui4k.client.data.model.AuthMethod
-import com.contextable.agui4k.client.data.repository.AgentRepository
-import com.contextable.agui4k.client.test.TestSettings
-import com.contextable.agui4k.client.test.TestChatViewModel
+import com.contextable.agui4k.sample.client.ui.screens.chat.MessageRole
+import com.contextable.agui4k.sample.client.data.model.AgentConfig
+import com.contextable.agui4k.sample.client.data.model.AuthMethod
+import com.contextable.agui4k.sample.client.data.repository.AgentRepository
+import com.contextable.agui4k.sample.client.test.TestSettings
+import com.contextable.agui4k.sample.client.test.TestChatViewModel
 import com.contextable.agui4k.core.types.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -84,7 +84,7 @@ class ChatViewModelTest {
 
     @Test
     fun testMessageFormatting() {
-        val userMessage = com.contextable.agui4k.client.ui.screens.chat.DisplayMessage(
+        val userMessage = com.contextable.agui4k.sample.client.ui.screens.chat.DisplayMessage(
             id = "1",
             role = MessageRole.USER,
             content = "Hello, agent!"
@@ -98,7 +98,7 @@ class ChatViewModelTest {
 
     @Test
     fun testStreamingMessage() {
-        val streamingMessage = com.contextable.agui4k.client.ui.screens.chat.DisplayMessage(
+        val streamingMessage = com.contextable.agui4k.sample.client.ui.screens.chat.DisplayMessage(
             id = "2",
             role = MessageRole.ASSISTANT,
             content = "Thinking...",

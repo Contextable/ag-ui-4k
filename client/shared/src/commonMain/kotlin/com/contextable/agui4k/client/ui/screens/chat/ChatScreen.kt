@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client.ui.screens.chat
+package com.contextable.agui4k.sample.client.ui.screens.chat
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -11,11 +11,11 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.contextable.agui4k.client.ui.screens.chat.components.ChatHeader
-import com.contextable.agui4k.client.ui.screens.chat.components.ChatInput
-import com.contextable.agui4k.client.ui.screens.chat.components.MessageList
-import com.contextable.agui4k.client.ui.screens.chat.components.UserConfirmationDialog
-import com.contextable.agui4k.client.ui.screens.settings.SettingsScreen
+import com.contextable.agui4k.sample.client.ui.screens.chat.components.ChatHeader
+import com.contextable.agui4k.sample.client.ui.screens.chat.components.ChatInput
+import com.contextable.agui4k.sample.client.ui.screens.chat.components.MessageList
+import com.contextable.agui4k.sample.client.ui.screens.chat.components.UserConfirmationDialog
+import com.contextable.agui4k.sample.client.ui.screens.settings.SettingsScreen
 import org.jetbrains.compose.resources.stringResource
 import agui4kclient.shared.generated.resources.*
 

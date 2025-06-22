@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client.ui.screens.settings.components
+package com.contextable.agui4k.sample.client.ui.screens.settings.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,11 +8,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.contextable.agui4k.client.data.model.AgentConfig
-import com.contextable.agui4k.client.data.model.AuthMethod
+import com.contextable.agui4k.sample.client.data.model.AgentConfig
+import com.contextable.agui4k.sample.client.data.model.AuthMethod
 import org.jetbrains.compose.resources.stringResource
 import agui4kclient.shared.generated.resources.*
-import com.contextable.agui4k.client.util.Strings
+import com.contextable.agui4k.sample.client.util.Strings
 
 fun getAuthMethodLabel(authMethod: AuthMethod): String {
     return when (authMethod) {

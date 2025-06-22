@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client.ui.screens.settings
+package com.contextable.agui4k.sample.client.ui.screens.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,8 +15,8 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.contextable.agui4k.client.ui.screens.settings.components.AddAgentDialog
-import com.contextable.agui4k.client.ui.screens.settings.components.AgentCard
+import com.contextable.agui4k.sample.client.ui.screens.settings.components.AddAgentDialog
+import com.contextable.agui4k.sample.client.ui.screens.settings.components.AgentCard
 import org.jetbrains.compose.resources.stringResource
 import agui4kclient.shared.generated.resources.*
 

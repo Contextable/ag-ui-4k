@@ -1,4 +1,4 @@
-package com.contextable.agui4k.client.ui.theme
+package com.contextable.agui4k.sample.client.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*

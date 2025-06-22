@@ -1,7 +1,7 @@
-package com.contextable.agui4k.client.data.repository
+package com.contextable.agui4k.sample.client.data.repository
 
-import com.contextable.agui4k.client.data.model.AgentConfig
-import com.contextable.agui4k.client.data.model.ChatSession
+import com.contextable.agui4k.sample.client.data.model.AgentConfig
+import com.contextable.agui4k.sample.client.data.model.ChatSession
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -94,10 +94,10 @@ class AgentRepository private constructor(
             )
             updateAgent(updatedAgent)
 
-            // Start new session
+            // Start new session - generate a simple thread ID for now
             _currentSession.value = ChatSession(
                 agentId = agent.id,
-                threadId = com.contextable.agui4k.core.agent.AbstractAgent.generateThreadId()
+                threadId = "thread_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
             )
         } else {
             settings.remove(KEY_ACTIVE_AGENT)

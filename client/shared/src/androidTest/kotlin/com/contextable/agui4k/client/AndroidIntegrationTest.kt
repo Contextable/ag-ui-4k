@@ -1,12 +1,12 @@
-package com.contextable.agui4k.client
+package com.contextable.agui4k.sample.client
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.contextable.agui4k.client.util.initializeAndroid
-import com.contextable.agui4k.client.util.getPlatformSettings
-import com.contextable.agui4k.client.util.isAndroidInitialized
-import com.contextable.agui4k.client.util.resetAndroidContext
+import com.contextable.agui4k.sample.client.util.initializeAndroid
+import com.contextable.agui4k.sample.client.util.getPlatformSettings
+import com.contextable.agui4k.sample.client.util.isAndroidInitialized
+import com.contextable.agui4k.sample.client.util.resetAndroidContext
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Before

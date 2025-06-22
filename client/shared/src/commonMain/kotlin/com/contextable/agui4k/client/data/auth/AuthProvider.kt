@@ -1,6 +1,6 @@
-package com.contextable.agui4k.client.data.auth
+package com.contextable.agui4k.sample.client.data.auth
 
-import com.contextable.agui4k.client.data.model.AuthMethod
+import com.contextable.agui4k.sample.client.data.model.AuthMethod
 
 /**
  * Interface for authentication providers that handle different auth methods.

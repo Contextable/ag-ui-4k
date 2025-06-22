@@ -1,7 +1,7 @@
-package com.contextable.agui4k.client.auth
+package com.contextable.agui4k.sample.client.auth
 
-import com.contextable.agui4k.client.data.auth.*
-import com.contextable.agui4k.client.data.model.AuthMethod
+import com.contextable.agui4k.sample.client.data.auth.*
+import com.contextable.agui4k.sample.client.data.model.AuthMethod
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 

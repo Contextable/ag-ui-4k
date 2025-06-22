@@ -1,9 +1,9 @@
-package com.contextable.agui4k.client
+package com.contextable.agui4k.sample.client
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.contextable.agui4k.client.util.initializeAndroid
+import com.contextable.agui4k.sample.client.util.initializeAndroid
 import org.slf4j.LoggerFactory
 
 class MainActivity : ComponentActivity() {

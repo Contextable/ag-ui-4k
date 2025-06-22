@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.contextable.agui4k.client.android"
+    namespace = "com.contextable.agui4k.sample.client.android"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.contextable.agui4k.client.android"
+        applicationId = "com.contextable.agui4k.sample.client.android"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
