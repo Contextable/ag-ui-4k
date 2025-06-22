@@ -88,13 +88,13 @@ class StatefulClient(
         // Prepare the message(s) to send based on strategy
         when (strategy) {
             ContextStrategy.SINGLE_MESSAGE -> {
-                // Send only the new user message
-                return startConversation(userMessage, finalThreadId)
+                // Send only the new user message with generated runId for state correlation
+                return startRun(listOf(userMessage), finalThreadId, generateRunId())
             }
             ContextStrategy.FULL_HISTORY -> {
                 // For full history, we need to send all messages
                 // This requires a different approach - we'll start a new run with the full context
-                return startConversationWithHistory(finalThreadId)
+                return startRunWithHistory(finalThreadId)
             }
         }
     }
@@ -135,7 +135,7 @@ class StatefulClient(
             }
             ContextStrategy.FULL_HISTORY -> {
                 // For full history mode, we need to start a new request with complete context
-                return startConversationWithHistory(threadId)
+                return startRunWithHistory(threadId)
             }
         }
     }
@@ -232,10 +232,10 @@ class StatefulClient(
     }
     
     /**
-     * Starts a conversation with full conversation history.
+     * Starts a run with full conversation history.
      * This is used for the FULL_HISTORY context strategy.
      */
-    private suspend fun startConversationWithHistory(threadId: String): Flow<BaseEvent> {
+    private suspend fun startRunWithHistory(threadId: String): Flow<BaseEvent> {
         val history = stateManager.getMessages(threadId)
         
         // Apply history limit if configured
@@ -256,8 +256,8 @@ class StatefulClient(
             "Starting conversation with ${messagesToSend.size} messages in history for thread $threadId" 
         }
         
-        // Use the new method that sends all messages
-        return startConversationWithMessages(messagesToSend, threadId)
+        // Use the new method that sends all messages with generated runId for state correlation
+        return startRun(messagesToSend, threadId, generateRunId())
     }
     
     /**
@@ -393,6 +393,8 @@ class StatefulClient(
         }
     }
     
+    
     private fun generateThreadId(): String = "thread_${Clock.System.now().toEpochMilliseconds()}"
     private fun generateMessageId(): String = "msg_${Clock.System.now().toEpochMilliseconds()}"
+    private fun generateRunId(): String = "run_${Clock.System.now().toEpochMilliseconds()}"
 }

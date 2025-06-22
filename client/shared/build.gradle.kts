@@ -28,11 +28,11 @@ kotlin {
                 implementation(compose.components.uiToolingPreview)
 
                 // ag-ui-4k library - new multi-module structure
-                implementation("com.contextable.agui4k:agui4k-core:0.1.6")
-                implementation("com.contextable.agui4k:agui4k-transport:0.1.6")
-                implementation("com.contextable.agui4k:agui4k-client:0.1.6")
-                implementation("com.contextable.agui4k:agui4k-tools:0.1.6")
-                implementation("com.contextable.agui4k:agui4k-tools-builtin:0.1.6")
+                implementation("com.contextable.agui4k:agui4k-core:0.1.7")
+                implementation("com.contextable.agui4k:agui4k-transport:0.1.7")
+                implementation("com.contextable.agui4k:agui4k-client:0.1.7")
+                implementation("com.contextable.agui4k:agui4k-tools:0.1.7")
+                implementation("com.contextable.agui4k:agui4k-tools-builtin:0.1.7")
 
                 // Navigation
                 implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")

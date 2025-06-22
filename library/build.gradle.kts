@@ -17,7 +17,7 @@ allprojects {
 // Configure all subprojects with common settings
 subprojects {
     group = "com.contextable.agui4k"
-    version = "0.1.6"
+    version = "0.1.7"
     
     tasks.withType<Test> {
         useJUnitPlatform()

@@ -49,7 +49,7 @@ class StatelessClient(
             createUserMessage(content)
         }
         
-        return startConversation(message, threadId)
+        return startRun(listOf(message), threadId)
     }
     
     /**
@@ -68,20 +68,12 @@ class StatelessClient(
     ): Flow<BaseEvent> {
         logger.info { "Sending stateless message with system context" }
         
-        // Start with system message to establish context
+        // Create both system and user messages to send in a single run
         val systemMessage = createSystemMessage(systemContent)
-        return startConversation(systemMessage, threadId).onCompletion { cause ->
-            if (cause == null) {
-                // After system message is processed, send user message
-                // Note: This is a simplified approach - in practice, you might want to
-                // handle this at the transport level or use a different pattern
-                logger.debug { "System context established, would typically send user message next" }
-            }
-        }.flatMapConcat { event ->
-            // For now, just return system message events
-            // In a more sophisticated implementation, you might queue the user message
-            flowOf(event)
-        }
+        val userMessage = createUserMessage(userContent)
+        
+        // Send both messages in a single run
+        return startRun(listOf(systemMessage, userMessage), threadId)
     }
     
     /**

@@ -6,6 +6,7 @@ import com.contextable.agui4k.transport.RunSession
 import com.contextable.agui4k.tools.ToolRegistry
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
+import kotlinx.serialization.json.JsonElement
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -24,40 +25,31 @@ abstract class AbstractClient(
     protected val toolRegistry: ToolRegistry? = null
 ) {
     /**
-     * Starts a new conversation with the agent.
+     * Starts a new run with the agent.
      * 
-     * @param message The initial message to send
+     * @param messages The messages to send to the agent (in chronological order)
      * @param threadId Optional thread ID to use (if null, a new thread is created)
+     * @param runId Optional run ID. If provided, used for client-side state correlation (StatefulClient). If null, agent generates it (StatelessClient).
+     * @param state Optional client-side state to send to the agent.
+     * @param context Optional list of context values to provide to the agent.
+     * @param forwardedProps Optional properties to forward to the agent.
      * @return A flow of events from the agent
      */
-    suspend fun startConversation(
-        message: Message,
-        threadId: String? = null
+    suspend fun startRun(
+        messages: List<Message>,
+        threadId: String? = null,
+        runId: String? = null,
+        state: Any? = null,
+        context: List<Context>? = null,
+        forwardedProps: Any? = null
     ): Flow<BaseEvent> {
-        logger.info { "Starting conversation with message: ${message.content}" }
+        logger.info { "Starting run with ${messages.size} message(s)" }
         
         val tools = toolRegistry?.getAllTools()
-        val session = transport.startRun(message, threadId, tools)
+        val session = transport.startRun(messages, threadId, runId, state, tools, context, forwardedProps)
         return processEventStream(session)
     }
     
-    /**
-     * Starts a new conversation with multiple messages (full history).
-     * 
-     * @param messages The messages to send (in chronological order)
-     * @param threadId Optional thread ID to use (if null, a new thread is created)
-     * @return A flow of events from the agent
-     */
-    suspend fun startConversationWithMessages(
-        messages: List<Message>,
-        threadId: String? = null
-    ): Flow<BaseEvent> {
-        logger.info { "Starting conversation with ${messages.size} messages" }
-        
-        val tools = toolRegistry?.getAllTools()
-        val session = transport.startRunWithMessages(messages, threadId, tools)
-        return processEventStream(session)
-    }
     
     /**
      * Continues an existing conversation by sending a message within a session.

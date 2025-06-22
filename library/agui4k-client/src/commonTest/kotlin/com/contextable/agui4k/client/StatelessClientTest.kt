@@ -22,9 +22,10 @@ class StatelessClientTest {
         
         // Verify the transport was called correctly
         assertEquals(1, mockTransport.startRunCalls.size)
-        val (message, threadId) = mockTransport.startRunCalls.first()
-        assertTrue(message is UserMessage)
-        assertEquals("Hello, AI!", message.content)
+        val (messages, threadId, runId) = mockTransport.startRunCalls.first()
+        assertEquals(1, messages.size)
+        assertTrue(messages[0] is UserMessage)
+        assertEquals("Hello, AI!", messages[0].content)
         // StatelessClient doesn't provide threadId by default
         assertNull(threadId)
         
@@ -52,9 +53,10 @@ class StatelessClientTest {
         
         // Verify the transport was called correctly
         assertEquals(1, mockTransport.startRunCalls.size)
-        val (message, threadId) = mockTransport.startRunCalls.first()
-        assertTrue(message is UserMessage)
-        assertEquals("What's the weather?", message.content)
+        val (messages, threadId, runId) = mockTransport.startRunCalls.first()
+        assertEquals(1, messages.size)
+        assertTrue(messages[0] is UserMessage)
+        assertEquals("What's the weather?", messages[0].content)
         assertEquals("test-thread-123", threadId)
         
         // Verify events were returned
@@ -66,16 +68,18 @@ class StatelessClientTest {
  * Mock implementation of ClientTransport for testing.
  */
 class MockClientTransport : ClientTransport {
-    val startRunCalls = mutableListOf<Pair<Message, String?>>()
-    val startRunWithMessagesCalls = mutableListOf<Pair<List<Message>, String?>>()
+    val startRunCalls = mutableListOf<Triple<List<Message>, String?, String?>>()
     
-    override suspend fun startRun(message: Message, threadId: String?, tools: List<Tool>?): RunSession {
-        startRunCalls.add(message to threadId)
-        return MockRunSession(threadId ?: "mock-thread-${System.currentTimeMillis()}")
-    }
-    
-    override suspend fun startRunWithMessages(messages: List<Message>, threadId: String?, tools: List<Tool>?): RunSession {
-        startRunWithMessagesCalls.add(messages to threadId)
+    override suspend fun startRun(
+        messages: List<Message>, 
+        threadId: String?, 
+        runId: String?, 
+        state: Any?, 
+        tools: List<Tool>?, 
+        context: List<Context>?, 
+        forwardedProps: Any?
+    ): RunSession {
+        startRunCalls.add(Triple(messages, threadId, runId))
         return MockRunSession(threadId ?: "mock-thread-${System.currentTimeMillis()}")
     }
 }

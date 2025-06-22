@@ -51,6 +51,10 @@ Desktop.ini
 # K2 Compiler
 .kotlin/
 
+# Claude
+.claude/
+CLAUDE.md
+
 # Virtual machine crash logs
 hs_err_pid*
 

@@ -192,13 +192,17 @@ class PatternAwareClient(
     }
     
     /**
-     * Starts a conversation with pattern-aware event processing.
+     * Starts a run with pattern-aware event processing.
      */
-    suspend fun startConversation(
-        message: Message,
-        threadId: String? = null
+    suspend fun startRun(
+        messages: List<Message>,
+        threadId: String? = null,
+        runId: String? = null,
+        state: Any? = null,
+        context: List<Context>? = null,
+        forwardedProps: Any? = null
     ): Flow<BaseEvent> {
-        var eventFlow = baseClient.startConversation(message, threadId)
+        var eventFlow = baseClient.startRun(messages, threadId, runId, state, context, forwardedProps)
         
         // Apply pattern processing if configured
         patternProcessor?.let { processor ->

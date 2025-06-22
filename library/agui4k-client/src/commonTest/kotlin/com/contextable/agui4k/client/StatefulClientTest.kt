@@ -77,12 +77,11 @@ class StatefulClientTest {
             threadId = threadId
         ).toList()
         
-        // With FULL_HISTORY strategy, both calls should use startRunWithMessages
-        assertEquals(0, mockTransport.startRunCalls.size) 
-        assertEquals(2, mockTransport.startRunWithMessagesCalls.size)
+        // With FULL_HISTORY strategy, both calls should use startRun
+        assertEquals(2, mockTransport.startRunCalls.size)
         
         // Check the second call which should have the full history
-        val (sentMessages, sentThreadId) = mockTransport.startRunWithMessagesCalls[1]
+        val (sentMessages, sentThreadId, sentRunId) = mockTransport.startRunCalls[1]
         
         // Debug: print what we actually got
         println("Messages sent in second call: ${sentMessages.size}")

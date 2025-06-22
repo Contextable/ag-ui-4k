@@ -79,25 +79,61 @@ class HttpClientTransport(
         }
     }
     
-    override suspend fun startRun(message: Message, threadId: String?, tools: List<Tool>?): RunSession {
-        return startRunWithMessages(listOf(message), threadId, tools)
-    }
-    
-    override suspend fun startRunWithMessages(messages: List<Message>, threadId: String?, tools: List<Tool>?): RunSession {
+    override suspend fun startRun(
+        messages: List<Message>, 
+        threadId: String?, 
+        runId: String?, 
+        state: Any?,
+        tools: List<Tool>?,
+        context: List<Context>?,
+        forwardedProps: Any?
+    ): RunSession {
         // Use provided thread ID or generate a new one
         val finalThreadId = threadId ?: generateThreadId()
         
-        // Create RunAgentInput with all messages and tools
+        // Convert Any? to JsonElement? for the wire protocol
+        val stateJson = state?.let { convertToJsonElement(it) }
+        val forwardedPropsJson = forwardedProps?.let { convertToJsonElement(it) }
+        
+        // Create RunAgentInput with all parameters
         val input = RunAgentInput(
             messages = messages,
             threadId = finalThreadId,
-            tools = tools ?: emptyList()
+            runId = runId, // Use provided runId or null (agent will generate)
+            state = stateJson,
+            tools = tools ?: emptyList(),
+            context = context ?: emptyList(),
+            forwardedProps = forwardedPropsJson
         )
         
         return HttpRunSession(httpClient, config.url, input, json, config.retryPolicy)
     }
     
+    private fun convertToJsonElement(value: Any): JsonElement {
+        return when (value) {
+            is JsonElement -> value
+            is String -> kotlinx.serialization.json.JsonPrimitive(value)
+            is Number -> kotlinx.serialization.json.JsonPrimitive(value)
+            is Boolean -> kotlinx.serialization.json.JsonPrimitive(value)
+            else -> {
+                // For complex objects, convert to string and then parse as JSON if possible
+                try {
+                    val jsonString = value.toString()
+                    if (jsonString.startsWith("{") || jsonString.startsWith("[")) {
+                        json.parseToJsonElement(jsonString)
+                    } else {
+                        kotlinx.serialization.json.JsonPrimitive(jsonString)
+                    }
+                } catch (e: Exception) {
+                    // Fallback to string representation
+                    kotlinx.serialization.json.JsonPrimitive(value.toString())
+                }
+            }
+        }
+    }
+    
     private fun generateThreadId(): String = "thread_${Clock.System.now().toEpochMilliseconds()}"
+    private fun generateRunId(): String = "run_${Clock.System.now().toEpochMilliseconds()}"
 }
 
 /**
