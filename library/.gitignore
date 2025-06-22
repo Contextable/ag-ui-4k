@@ -5,6 +5,7 @@ out/
 
 # IDE
 .idea/
+.claude/
 *.iml
 local.properties
 
