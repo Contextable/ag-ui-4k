@@ -356,12 +356,12 @@ class MessageProtocolComplianceTest {
         )
 
         roles.forEach { (expectedRole, message) ->
-            assertEquals(expectedRole, message.role)
+            assertEquals(expectedRole, message.messageRole)
 
             val jsonString = json.encodeToString<Message>(message)
             val decoded = json.decodeFromString<Message>(jsonString)
 
-            assertEquals(expectedRole, decoded.role)
+            assertEquals(expectedRole, decoded.messageRole)
         }
     }
 

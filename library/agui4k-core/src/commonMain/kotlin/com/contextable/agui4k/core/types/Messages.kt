@@ -15,7 +15,9 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 @JsonClassDiscriminator("role")
 sealed interface Message {
     val id: String
-    val role: Role
+    // Necessary to deal with Kotlinx polymorphic serialization; without this, there's a conflict.
+    @SerialName("role")
+    val messageRole: Role
     val content: String?
     val name: String?
 }
@@ -26,19 +28,10 @@ sealed interface Message {
  */
 @Serializable
 enum class Role {
-    @SerialName("developer")
     DEVELOPER,
-
-    @SerialName("system")
     SYSTEM,
-
-    @SerialName("assistant")
     ASSISTANT,
-
-    @SerialName("user")
     USER,
-
-    @SerialName("tool")
     TOOL
 }
 
@@ -46,9 +39,10 @@ enum class Role {
  * Represents a message from a developer.
  */
 @Serializable
+@SerialName("developer")
 data class DeveloperMessage(
     override val id: String,
-    override val role: Role = Role.DEVELOPER,
+    override val messageRole: Role = Role.DEVELOPER,
     override val content: String,
     override val name: String? = null
 ) : Message
@@ -57,9 +51,10 @@ data class DeveloperMessage(
  * Represents a system message.
  */
 @Serializable
+@SerialName("system")
 data class SystemMessage(
     override val id: String,
-    override val role: Role = Role.SYSTEM,
+    override val messageRole: Role = Role.SYSTEM,
     override val content: String,
     override val name: String? = null
 ) : Message
@@ -68,9 +63,10 @@ data class SystemMessage(
  * Represents a message from an assistant.
  */
 @Serializable
+@SerialName("assistant")
 data class AssistantMessage(
     override val id: String,
-    override val role: Role = Role.ASSISTANT,
+    override val messageRole: Role = Role.ASSISTANT,
     override val content: String? = null,
     override val name: String? = null,
     val toolCalls: List<ToolCall>? = null
@@ -80,9 +76,10 @@ data class AssistantMessage(
  * Represents a message from a user.
  */
 @Serializable
+@SerialName("user")
 data class UserMessage(
     override val id: String,
-    override val role: Role = Role.USER,
+    override val messageRole: Role = Role.USER,
     override val content: String,
     override val name: String? = null
 ) : Message
@@ -91,9 +88,10 @@ data class UserMessage(
  * Represents a message from a tool.
  */
 @Serializable
+@SerialName("tool")
 data class ToolMessage(
     override val id: String,
-    override val role: Role = Role.TOOL,
+    override val messageRole: Role = Role.TOOL,
     override val content: String,
     val toolCallId: String,
     override val name: String? = null
