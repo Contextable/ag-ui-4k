@@ -383,4 +383,216 @@ class MessageProtocolComplianceTest {
         assertTrue(decoded is UserMessage)
         assertEquals("", decoded.content)
     }
+
+    @Test
+    fun testToolCallTypeAlwaysFunction() {
+        // Test that ToolCall.callType is always "function" when deserializing
+        val toolCall = ToolCall(
+            id = "call_test",
+            function = FunctionCall(
+                name = "test_function",
+                arguments = "{\"param\": \"value\"}"
+            )
+        )
+
+        val message = AssistantMessage(
+            id = "msg_test",
+            content = null,
+            toolCalls = listOf(toolCall)
+        )
+
+        val jsonString = json.encodeToString<Message>(message)
+        val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+        
+        // Verify callType is "function" in JSON
+        val toolCallsArray = jsonObj["toolCalls"]?.jsonArray
+        assertNotNull(toolCallsArray)
+        val firstToolCall = toolCallsArray[0].jsonObject
+        assertEquals("function", firstToolCall["type"]?.jsonPrimitive?.content)
+
+        // Verify callType is "function" after deserialization
+        val decoded = json.decodeFromString<Message>(jsonString)
+        assertTrue(decoded is AssistantMessage)
+        val decodedToolCall = decoded.toolCalls?.first()
+        assertNotNull(decodedToolCall)
+        assertEquals("function", decodedToolCall.callType)
+    }
+
+    @Test
+    fun testSystemMessageRequiredContentField() {
+        // Test that SystemMessage requires content to be provided
+        val message = SystemMessage(
+            id = "sys_required",
+            content = "Required system message content"
+        )
+
+        val jsonString = json.encodeToString<Message>(message)
+        val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+
+        // Content field must be present and non-null for system messages
+        assertTrue(jsonObj.containsKey("content"))
+        assertEquals("Required system message content", jsonObj["content"]?.jsonPrimitive?.content)
+
+        val decoded = json.decodeFromString<Message>(jsonString)
+        assertTrue(decoded is SystemMessage)
+        assertEquals("Required system message content", decoded.content)
+    }
+
+    @Test
+    fun testMessageRoleValidation() {
+        // Test that each message type has the correct role
+        val messages = listOf(
+            UserMessage(id = "1", content = "user") to "user",
+            AssistantMessage(id = "2", content = "assistant") to "assistant", 
+            SystemMessage(id = "3", content = "system") to "system",
+            ToolMessage(id = "4", content = "tool", toolCallId = "tc1") to "tool",
+            DeveloperMessage(id = "5", content = "developer") to "developer"
+        )
+
+        messages.forEach { (message, expectedRole) ->
+            val jsonString = json.encodeToString<Message>(message)
+            val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+            
+            assertEquals(expectedRole, jsonObj["role"]?.jsonPrimitive?.content)
+            
+            val decoded = json.decodeFromString<Message>(jsonString)
+            assertEquals(expectedRole, decoded.messageRole.name.lowercase())
+        }
+    }
+
+    @Test
+    fun testLargeMessageHandling() {
+        // Test handling of very large message content
+        val largeContent = "A".repeat(10000) // 10KB string
+        
+        val message = UserMessage(
+            id = "large_msg",
+            content = largeContent
+        )
+
+        val jsonString = json.encodeToString<Message>(message)
+        val decoded = json.decodeFromString<Message>(jsonString)
+        
+        assertTrue(decoded is UserMessage)
+        assertEquals(largeContent, decoded.content)
+        assertEquals(10000, decoded.content.length)
+    }
+
+    @Test
+    fun testToolCallWithComplexArguments() {
+        // Test tool calls with nested JSON arguments
+        val complexArgs = """
+        {
+            "query": "search term",
+            "filters": {
+                "date_range": {
+                    "start": "2024-01-01",
+                    "end": "2024-12-31"
+                },
+                "categories": ["tech", "science"],
+                "price_range": {
+                    "min": 0,
+                    "max": 1000
+                }
+            },
+            "sort": ["relevance", "date"],
+            "limit": 25,
+            "include_metadata": true
+        }
+        """.trimIndent()
+
+        val toolCall = ToolCall(
+            id = "complex_call",
+            function = FunctionCall(
+                name = "advanced_search",
+                arguments = complexArgs
+            )
+        )
+
+        val message = AssistantMessage(
+            id = "complex_msg",
+            content = "Let me search for that",
+            toolCalls = listOf(toolCall)
+        )
+
+        val jsonString = json.encodeToString<Message>(message)
+        val decoded = json.decodeFromString<Message>(jsonString)
+        
+        assertTrue(decoded is AssistantMessage)
+        val decodedToolCall = decoded.toolCalls?.first()
+        assertNotNull(decodedToolCall)
+        assertEquals("complex_call", decodedToolCall.id)
+        assertEquals("advanced_search", decodedToolCall.function.name)
+        
+        // Verify the arguments can be parsed as valid JSON
+        val parsedArgs = json.parseToJsonElement(decodedToolCall.function.arguments)
+        assertTrue(parsedArgs.jsonObject.containsKey("query"))
+        assertTrue(parsedArgs.jsonObject.containsKey("filters"))
+    }
+
+    @Test
+    fun testMessageWithUnicodeContent() {
+        // Test messages with various Unicode characters
+        val unicodeContent = """
+            🚀 Emojis: 😀 😂 🤔 💡 ⚡ 🌟
+            Symbols: © ® ™ ℃ ℉ ± × ÷ ∞
+            Languages: English, Español, Français, Deutsch, 中文, 日本語, العربية, Русский
+            Math: ∫ ∑ ∏ √ ∂ ∇ α β γ δ ε ζ η θ
+            Special: \u0000 \u001F \u007F \u0080 \u009F
+        """.trimIndent()
+
+        val message = UserMessage(
+            id = "unicode_msg",
+            content = unicodeContent
+        )
+
+        val jsonString = json.encodeToString<Message>(message)
+        val decoded = json.decodeFromString<Message>(jsonString)
+        
+        assertTrue(decoded is UserMessage)
+        assertEquals(unicodeContent, decoded.content)
+    }
+
+    @Test
+    fun testMessageNameFieldHandling() {
+        // Test optional name field behavior across message types
+        val messagesWithNames = listOf(
+            UserMessage(id = "u1", content = "test", name = "user_name"),
+            AssistantMessage(id = "a1", content = "test", name = "assistant_name"),
+            SystemMessage(id = "s1", content = "test", name = "system_name"),
+            ToolMessage(id = "t1", content = "test", toolCallId = "tc1", name = "tool_name"),
+            DeveloperMessage(id = "d1", content = "test", name = "dev_name")
+        )
+
+        messagesWithNames.forEach { message ->
+            val jsonString = json.encodeToString<Message>(message)
+            val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+            
+            assertTrue(jsonObj.containsKey("name"))
+            assertNotNull(jsonObj["name"]?.jsonPrimitive?.content)
+            
+            val decoded = json.decodeFromString<Message>(jsonString)
+            assertNotNull(decoded.name)
+        }
+
+        // Test messages without names
+        val messagesWithoutNames = listOf(
+            UserMessage(id = "u2", content = "test"),
+            AssistantMessage(id = "a2", content = "test"),
+            SystemMessage(id = "s2", content = "test"),
+            ToolMessage(id = "t2", content = "test", toolCallId = "tc2"),
+            DeveloperMessage(id = "d2", content = "test")
+        )
+
+        messagesWithoutNames.forEach { message ->
+            val jsonString = json.encodeToString<Message>(message)
+            val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+            
+            // name field should not be present when null
+            assertFalse(jsonObj.containsKey("name"))
+            
+            val decoded = json.decodeFromString<Message>(jsonString)
+            assertNull(decoded.name)
+        }
+    }
 }

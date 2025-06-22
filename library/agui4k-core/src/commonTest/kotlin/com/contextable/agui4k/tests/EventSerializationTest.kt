@@ -95,7 +95,6 @@ class EventSerializationTest {
     fun testTextMessageStartEventSerialization() {
         val event = TextMessageStartEvent(
             messageId = "msg_789",
-            role = "assistant"
         )
 
         val jsonString = json.encodeToString<BaseEvent>(event)
@@ -246,11 +245,10 @@ class EventSerializationTest {
         val decoded = json.decodeFromString<BaseEvent>(jsonString)
 
         assertTrue(decoded is StateDeltaEvent)
-        assertTrue(decoded.delta is JsonArray)
-        assertEquals(4, decoded.delta.jsonArray.size)
+        assertEquals(4, decoded.delta.size)
 
         // Verify first patch
-        val firstPatch = decoded.delta.jsonArray[0].jsonObject
+        val firstPatch = decoded.delta[0].jsonObject
         assertEquals("add", firstPatch["op"]?.jsonPrimitive?.content)
         assertEquals("/user/name", firstPatch["path"]?.jsonPrimitive?.content)
         assertEquals("John Doe", firstPatch["value"]?.jsonPrimitive?.content)
@@ -276,7 +274,7 @@ class EventSerializationTest {
         val decoded = json.decodeFromString<BaseEvent>(jsonString)
 
         assertTrue(decoded is StateDeltaEvent)
-        val patchArray = decoded.delta.jsonArray
+        val patchArray = decoded.delta
         assertEquals(2, patchArray.size)
 
         patchArray.forEach { patch ->
@@ -292,8 +290,7 @@ class EventSerializationTest {
         val decoded = json.decodeFromString<BaseEvent>(jsonString)
 
         assertTrue(decoded is StateDeltaEvent)
-        assertTrue(decoded.delta is JsonArray)
-        assertEquals(0, decoded.delta.jsonArray.size)
+        assertEquals(0, decoded.delta.size)
     }
 
     @Test
@@ -384,7 +381,6 @@ class EventSerializationTest {
 
         val event = TextMessageStartEvent(
             messageId = "msg_123",
-            role = "user",
             timestamp = 1234567890L,
             rawEvent = rawEvent
         )
@@ -402,7 +398,7 @@ class EventSerializationTest {
     fun testEventListSerialization() {
         val events: List<BaseEvent> = listOf(
             RunStartedEvent(threadId = "t1", runId = "r1"),
-            TextMessageStartEvent(messageId = "m1", role = "assistant"),
+            TextMessageStartEvent(messageId = "m1"),
             TextMessageContentEvent(messageId = "m1", delta = "Hello"),
             TextMessageEndEvent(messageId = "m1"),
             RunFinishedEvent(threadId = "t1", runId = "r1")
@@ -430,7 +426,7 @@ class EventSerializationTest {
             RunErrorEvent(message = "err") to "RUN_ERROR",
             StepStartedEvent(stepName = "s") to "STEP_STARTED",
             StepFinishedEvent(stepName = "s") to "STEP_FINISHED",
-            TextMessageStartEvent(messageId = "m", role = "a") to "TEXT_MESSAGE_START",
+            TextMessageStartEvent(messageId = "m") to "TEXT_MESSAGE_START",
             TextMessageContentEvent(messageId = "m", delta = "d") to "TEXT_MESSAGE_CONTENT",
             TextMessageEndEvent(messageId = "m") to "TEXT_MESSAGE_END",
             ToolCallStartEvent(toolCallId = "t", toolCallName = "n") to "TOOL_CALL_START",
@@ -481,5 +477,480 @@ class EventSerializationTest {
         assertTrue(decoded is RunStartedEvent)
         assertEquals("t1", decoded.threadId)
         assertEquals("r1", decoded.runId)
+    }
+
+    // ========== Timestamp Field Tests ==========
+
+    @Test
+    fun testEventWithTimestamp() {
+        val timestamp = 1234567890123L
+        val event = RunStartedEvent(
+            threadId = "thread-123",
+            runId = "run-456",
+            timestamp = timestamp
+        )
+
+        val jsonString = json.encodeToString(event)
+        val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+        
+        // Verify timestamp is serialized
+        assertNotNull(jsonObj["timestamp"])
+        assertEquals(timestamp, jsonObj["timestamp"]?.jsonPrimitive?.long)
+
+        // Verify deserialization
+        val decoded = json.decodeFromString<RunStartedEvent>(jsonString)
+        assertEquals(timestamp, decoded.timestamp)
+    }
+
+    @Test
+    fun testEventWithoutTimestamp() {
+        val event = TextMessageContentEvent(
+            messageId = "msg-123",
+            delta = "Hello world"
+        )
+
+        val jsonString = json.encodeToString(event)
+        val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+        
+        // Verify timestamp is not included when null
+        assertFalse(jsonObj.containsKey("timestamp"))
+    }
+
+    @Test
+    fun testMultipleEventsWithTimestamps() {
+        val baseTime = 1700000000000L
+        val events = listOf(
+            RunStartedEvent(threadId = "t1", runId = "r1", timestamp = baseTime),
+            TextMessageStartEvent(messageId = "m1", timestamp = baseTime + 100),
+            TextMessageContentEvent(messageId = "m1", delta = "Test", timestamp = baseTime + 200),
+            TextMessageEndEvent(messageId = "m1", timestamp = baseTime + 300),
+            RunFinishedEvent(threadId = "t1", runId = "r1", timestamp = baseTime + 400)
+        )
+
+        events.forEach { event ->
+            val jsonString = json.encodeToString<BaseEvent>(event)
+            val decoded = json.decodeFromString<BaseEvent>(jsonString)
+            assertEquals(event.timestamp, decoded.timestamp)
+        }
+    }
+
+    // ========== RawEvent Field Tests ==========
+
+    @Test
+    fun testEventWithRawEvent() {
+        val rawEventData = buildJsonObject {
+            put("originalType", "custom_event")
+            put("data", buildJsonObject {
+                put("key", "value")
+                put("number", 42)
+            })
+        }
+
+        val event = RunErrorEvent(
+            message = "Error occurred",
+            code = "ERR_001",
+            rawEvent = rawEventData
+        )
+
+        val jsonString = json.encodeToString(event)
+        val decoded = json.decodeFromString<RunErrorEvent>(jsonString)
+        
+        assertNotNull(decoded.rawEvent)
+        assertEquals(rawEventData, decoded.rawEvent)
+        assertEquals("custom_event", decoded.rawEvent?.jsonObject?.get("originalType")?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun testRawEventSerializationWithDetails() {
+        val innerEvent = buildJsonObject {
+            put("type", "unknown_event")
+            put("customField", "customValue")
+            putJsonArray("tags") {
+                add("tag1")
+                add("tag2")
+            }
+        }
+
+        val rawEvent = RawEvent(
+            event = innerEvent,
+            source = "external-system",
+            timestamp = 1234567890L
+        )
+
+        val jsonString = json.encodeToString(rawEvent)
+        val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+
+        // Verify all fields are serialized
+        assertEquals("RAW", jsonObj["eventType"]?.jsonPrimitive?.content)
+        assertEquals(innerEvent, jsonObj["event"])
+        assertEquals("external-system", jsonObj["source"]?.jsonPrimitive?.content)
+        assertEquals(1234567890L, jsonObj["timestamp"]?.jsonPrimitive?.long)
+
+        // Verify deserialization
+        val decoded = json.decodeFromString<RawEvent>(jsonString)
+        assertEquals(innerEvent, decoded.event)
+        assertEquals("external-system", decoded.source)
+        assertEquals(1234567890L, decoded.timestamp)
+    }
+
+    @Test
+    fun testRawEventWithNestedRawEvent() {
+        val originalRawData = buildJsonObject {
+            put("level1", "data")
+        }
+
+        val rawEvent = RawEvent(
+            event = buildJsonObject {
+                put("wrapped", true)
+                put("content", "test")
+            },
+            source = "wrapper",
+            rawEvent = originalRawData,
+            timestamp = 999999L
+        )
+
+        val jsonString = json.encodeToString(rawEvent)
+        val decoded = json.decodeFromString<RawEvent>(jsonString)
+
+        assertNotNull(decoded.rawEvent)
+        assertEquals(originalRawData, decoded.rawEvent)
+        assertEquals("wrapper", decoded.source)
+        assertEquals(999999L, decoded.timestamp)
+    }
+
+    @Test
+    fun testEventsWithBothTimestampAndRawEvent() {
+        val timestamp = 1700000000000L
+        val rawData = buildJsonObject {
+            put("debug", true)
+            put("origin", "test-suite")
+        }
+
+        val events = listOf(
+            StateSnapshotEvent(
+                snapshot = buildJsonObject { put("state", "initial") },
+                timestamp = timestamp,
+                rawEvent = rawData
+            ),
+            CustomEvent(
+                name = "test-event",
+                value = JsonPrimitive("test-value"),
+                timestamp = timestamp + 1000,
+                rawEvent = rawData
+            )
+        )
+
+        events.forEach { event ->
+            val jsonString = json.encodeToString<BaseEvent>(event)
+            val decoded = json.decodeFromString<BaseEvent>(jsonString)
+            
+            assertNotNull(decoded.timestamp)
+            assertNotNull(decoded.rawEvent)
+            assertEquals(event.timestamp, decoded.timestamp)
+            assertEquals(rawData, decoded.rawEvent)
+        }
+    }
+
+    @Test
+    fun testTimestampPrecision() {
+        // Test with various timestamp values including edge cases
+        val timestamps = listOf(
+            0L,                    // Epoch start
+            1L,                    // Minimal positive
+            999999999999L,         // Milliseconds before year 2001
+            1700000000000L,        // Recent timestamp
+            9999999999999L,        // Far future
+            Long.MAX_VALUE         // Maximum value
+        )
+
+        timestamps.forEach { ts ->
+            val event = StepStartedEvent(
+                stepName = "test-step",
+                timestamp = ts
+            )
+            
+            val jsonString = json.encodeToString(event)
+            val decoded = json.decodeFromString<StepStartedEvent>(jsonString)
+            
+            assertEquals(ts, decoded.timestamp, "Timestamp $ts was not preserved correctly")
+        }
+    }
+
+    // ========== RawEvent Field Tests (for all event types) ==========
+
+    @Test
+    fun testRunStartedEventWithRawEvent() {
+        val rawEventData = buildJsonObject {
+            put("originalSource", "legacy-system")
+            put("metadata", buildJsonObject {
+                put("version", "1.0")
+                put("debugInfo", true)
+            })
+        }
+
+        val event = RunStartedEvent(
+            threadId = "thread-123",
+            runId = "run-456",
+            timestamp = 1700000000000L,
+            rawEvent = rawEventData
+        )
+
+        val jsonString = json.encodeToString(event)
+        val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+
+        // Verify all fields including rawEvent
+        assertEquals("thread-123", jsonObj["threadId"]?.jsonPrimitive?.content)
+        assertEquals("run-456", jsonObj["runId"]?.jsonPrimitive?.content)
+        assertEquals(1700000000000L, jsonObj["timestamp"]?.jsonPrimitive?.long)
+        assertEquals(rawEventData, jsonObj["rawEvent"])
+
+        // Verify deserialization
+        val decoded = json.decodeFromString<RunStartedEvent>(jsonString)
+        assertEquals(rawEventData, decoded.rawEvent)
+        assertEquals("legacy-system", decoded.rawEvent?.jsonObject?.get("originalSource")?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun testTextMessageEventsWithRawEvent() {
+        val rawEventData = buildJsonObject {
+            put("llmProvider", "openai")
+            put("model", "gpt-4")
+            put("requestId", "req-12345")
+            putJsonObject("usage") {
+                put("promptTokens", 150)
+                put("completionTokens", 75)
+            }
+        }
+
+        // Test all three text message event types
+        val startEvent = TextMessageStartEvent(
+            messageId = "msg-001",
+            rawEvent = rawEventData
+        )
+
+        val contentEvent = TextMessageContentEvent(
+            messageId = "msg-001",
+            delta = "Hello, how can I help you?",
+            rawEvent = rawEventData
+        )
+
+        val endEvent = TextMessageEndEvent(
+            messageId = "msg-001",
+            rawEvent = rawEventData
+        )
+
+        // Verify each event preserves rawEvent
+        listOf(startEvent, contentEvent, endEvent).forEach { event ->
+            val jsonString = json.encodeToString<BaseEvent>(event)
+            val decoded = json.decodeFromString<BaseEvent>(jsonString)
+            
+            assertNotNull(decoded.rawEvent)
+            assertEquals(rawEventData, decoded.rawEvent)
+            assertEquals("openai", decoded.rawEvent?.jsonObject?.get("llmProvider")?.jsonPrimitive?.content)
+        }
+    }
+
+    @Test
+    fun testToolCallEventsWithRawEvent() {
+        val rawEventData = buildJsonObject {
+            put("toolProvider", "internal")
+            put("executionTime", 45)
+            putJsonArray("capabilities") {
+                add("read")
+                add("write")
+                add("execute")
+            }
+        }
+
+        val toolCallStart = ToolCallStartEvent(
+            toolCallId = "tool-123",
+            toolCallName = "file_reader",
+            parentMessageId = "msg-parent",
+            rawEvent = rawEventData
+        )
+
+        val toolCallArgs = ToolCallArgsEvent(
+            toolCallId = "tool-123",
+            delta = """{"path": "/tmp/test.txt"}""",
+            rawEvent = rawEventData
+        )
+
+        val toolCallEnd = ToolCallEndEvent(
+            toolCallId = "tool-123",
+            rawEvent = rawEventData
+        )
+
+        // Test serialization and deserialization
+        val events = listOf(toolCallStart, toolCallArgs, toolCallEnd)
+        events.forEach { event ->
+            val jsonString = json.encodeToString<BaseEvent>(event)
+            val decoded = json.decodeFromString<BaseEvent>(jsonString)
+            
+            assertEquals(rawEventData, decoded.rawEvent)
+            val capabilities = decoded.rawEvent?.jsonObject?.get("capabilities")?.jsonArray
+            assertNotNull(capabilities)
+            assertEquals(3, capabilities.size)
+            assertEquals("execute", capabilities[2].jsonPrimitive.content)
+        }
+    }
+
+    @Test
+    fun testStateEventsWithRawEvent() {
+        val rawEventData = buildJsonObject {
+            put("stateVersion", 2)
+            put("syncedAt", "2024-01-15T10:30:00Z")
+            put("source", "state-manager")
+        }
+
+        // StateSnapshotEvent
+        val snapshotEvent = StateSnapshotEvent(
+            snapshot = buildJsonObject {
+                put("currentStep", "processing")
+                put("itemsProcessed", 42)
+            },
+            rawEvent = rawEventData
+        )
+
+        // StateDeltaEvent with JSON Patch
+        val deltaEvent = StateDeltaEvent(
+            delta = buildJsonArray {
+                addJsonObject {
+                    put("op", "add")
+                    put("path", "/itemsProcessed")
+                    put("value", 43)
+                }
+            },
+            rawEvent = rawEventData
+        )
+
+        // MessagesSnapshotEvent
+        val messagesEvent = MessagesSnapshotEvent(
+            messages = listOf(
+                UserMessage(id = "1", content = "Hello"),
+                AssistantMessage(id = "2", content = "Hi there")
+            ),
+            rawEvent = rawEventData
+        )
+
+        listOf(snapshotEvent, deltaEvent, messagesEvent).forEach { event ->
+            val jsonString = json.encodeToString<BaseEvent>(event)
+            val decoded = json.decodeFromString<BaseEvent>(jsonString)
+            
+            assertEquals(rawEventData, decoded.rawEvent)
+            assertEquals(2, decoded.rawEvent?.jsonObject?.get("stateVersion")?.jsonPrimitive?.int)
+        }
+    }
+
+    @Test
+    fun testRunErrorEventWithComplexRawEvent() {
+        val rawEventData = buildJsonObject {
+            put("errorContext", buildJsonObject {
+                put("file", "processor.kt")
+                put("line", 125)
+                put("function", "processData")
+            })
+            putJsonArray("stackTrace") {
+                add("at processData(processor.kt:125)")
+                add("at main(app.kt:50)")
+            }
+            put("environment", buildJsonObject {
+                put("os", "Linux")
+                put("jvm", "17.0.5")
+                put("heap", "512MB")
+            })
+        }
+
+        val errorEvent = RunErrorEvent(
+            message = "Failed to process data",
+            code = "PROC_ERR_001",
+            timestamp = 1700000000000L,
+            rawEvent = rawEventData
+        )
+
+        val jsonString = json.encodeToString(errorEvent)
+        val decoded = json.decodeFromString<RunErrorEvent>(jsonString)
+
+        // Verify complex nested structure is preserved
+        assertNotNull(decoded.rawEvent)
+        val errorContext = decoded.rawEvent?.jsonObject?.get("errorContext")?.jsonObject
+        assertEquals("processor.kt", errorContext?.get("file")?.jsonPrimitive?.content)
+        assertEquals(125, errorContext?.get("line")?.jsonPrimitive?.int)
+        
+        val stackTrace = decoded.rawEvent?.jsonObject?.get("stackTrace")?.jsonArray
+        assertEquals(2, stackTrace?.size)
+        assertTrue(stackTrace?.get(0)?.jsonPrimitive?.content?.contains("processData") == true)
+    }
+
+    @Test
+    fun testEventTypeImmutability() {
+        // This test verifies that eventType is immutable and tied to the event class
+        val runStarted = RunStartedEvent(
+            threadId = "t1",
+            runId = "r1"
+        )
+        
+        // The eventType is hardcoded in the class, so it will always be RUN_STARTED
+        assertEquals(EventType.RUN_STARTED, runStarted.eventType)
+        
+        // Serialize and verify the type discriminator matches
+        val jsonString = json.encodeToString(runStarted)
+        val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+        
+        // With the current structure, only eventType is present in the JSON
+        assertEquals("RUN_STARTED", jsonObj["eventType"]?.jsonPrimitive?.content)
+        
+        // When deserializing, the eventType is still correct
+        val decoded = json.decodeFromString<RunStartedEvent>(jsonString)
+        assertEquals(EventType.RUN_STARTED, decoded.eventType)
+    }
+
+    @Test
+    fun testCannotCreateEventWithWrongType() {
+        // This test documents that you cannot create an event with the wrong type
+        // via constructor because eventType is a hardcoded override in each event class
+        
+        val runFinished = RunFinishedEvent(
+            threadId = "t1",
+            runId = "r1"
+        )
+        
+        // No matter what, this will always be RUN_FINISHED when constructed
+        assertEquals(EventType.RUN_FINISHED, runFinished.eventType)
+        
+        // Test that the proper JSON with correct eventType deserializes correctly
+        val properJson = """
+            {
+                "eventType": "RUN_FINISHED",
+                "threadId": "t1",
+                "runId": "r1"
+            }
+        """.trimIndent()
+        
+        val decoded = json.decodeFromString<RunFinishedEvent>(properJson)
+        assertEquals(EventType.RUN_FINISHED, decoded.eventType)
+        
+        // Note: With the current implementation, trying to deserialize JSON with a 
+        // mismatched eventType would fail or produce unexpected results because
+        // the serialization framework expects the eventType to match the class type
+    }
+
+    @Test
+    fun testNullRawEventNotSerialized() {
+        // Test that null rawEvent fields are not included in JSON output
+        val event = StepStartedEvent(
+            stepName = "initialization",
+            timestamp = 1700000000000L,
+            rawEvent = null
+        )
+
+        val jsonString = json.encodeToString(event)
+        val jsonObj = json.parseToJsonElement(jsonString).jsonObject
+
+        // rawEvent should not be present in JSON when null
+        assertFalse(jsonObj.containsKey("rawEvent"))
+        
+        // But other fields should be present
+        assertEquals("initialization", jsonObj["stepName"]?.jsonPrimitive?.content)
+        assertEquals(1700000000000L, jsonObj["timestamp"]?.jsonPrimitive?.long)
     }
 }

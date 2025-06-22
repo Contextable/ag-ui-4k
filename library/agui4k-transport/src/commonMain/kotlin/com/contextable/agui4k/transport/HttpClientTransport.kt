@@ -17,7 +17,9 @@ import kotlinx.coroutines.flow.*
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import mu.KotlinLogging
+import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
 
@@ -96,11 +98,11 @@ class HttpClientTransport(
         val input = RunAgentInput(
             messages = messages,
             threadId = finalThreadId,
-            runId = runId, // Use provided runId or null (agent will generate)
-            state = stateJson,
+            runId = runId ?: "run_${Clock.System.now().toEpochMilliseconds()}_${Random.nextInt(1000, 9999)}", // Use provided runId or generate one
+            state = stateJson ?: JsonObject(emptyMap()),
             tools = tools ?: emptyList(),
             context = context ?: emptyList(),
-            forwardedProps = forwardedPropsJson
+            forwardedProps = forwardedPropsJson ?: JsonObject(emptyMap())
         )
         
         return HttpRunSession(httpClient, config.url, input, json, config.retryPolicy)
@@ -217,7 +219,8 @@ private class HttpRunSession(
         // This creates a new request with the additional message
         val input = RunAgentInput(
             messages = listOf(message),
-            threadId = initialInput.threadId
+            threadId = initialInput.threadId,
+            runId = initialInput.runId
         )
         
         try {

@@ -25,12 +25,14 @@ class RunAgentInputProtocolTest {
         assertEquals("thread_abc123", jsonObj["threadId"]?.jsonPrimitive?.content)
         assertEquals("run_xyz789", jsonObj["runId"]?.jsonPrimitive?.content)
 
-        // Optional fields should not be present when null/empty
-        assertFalse(jsonObj.containsKey("state"))
+        // Fields with default values should be present
+        assertTrue(jsonObj.containsKey("state"))
+        assertTrue(jsonObj["state"]?.jsonObject?.isEmpty() == true)
         assertTrue(jsonObj["messages"]?.jsonArray?.isEmpty() == true)
         assertTrue(jsonObj["tools"]?.jsonArray?.isEmpty() == true)
         assertTrue(jsonObj["context"]?.jsonArray?.isEmpty() == true)
-        assertFalse(jsonObj.containsKey("forwardedProps"))
+        assertTrue(jsonObj.containsKey("forwardedProps"))
+        assertTrue(jsonObj["forwardedProps"]?.jsonObject?.isEmpty() == true)
 
         val decoded = json.decodeFromString<RunAgentInput>(jsonString)
         assertEquals(input, decoded)
@@ -264,9 +266,13 @@ class RunAgentInputProtocolTest {
 
     @Test
     fun testRunAgentParametersMapping() {
-        val params = RunAgentParameters(
+        // Simulate what AbstractAgent.prepareRunAgentInput does
+        val input = RunAgentInput(
+            threadId = "thread_123",
             runId = "custom_run_id",
-            tools = listOf(
+            state = JsonNull,
+            messages = emptyList(),
+            tools  = listOf(
                 Tool(
                     name = "tool1",
                     description = "Test tool",
@@ -279,17 +285,6 @@ class RunAgentInputProtocolTest {
             forwardedProps = buildJsonObject {
                 put("custom", "data")
             }
-        )
-
-        // Simulate what AbstractAgent.prepareRunAgentInput does
-        val input = RunAgentInput(
-            threadId = "thread_123",
-            runId = params.runId ?: "generated_run_id",
-            state = JsonNull,
-            messages = emptyList(),
-            tools = params.tools,
-            context = params.context,
-            forwardedProps = params.forwardedProps
         )
 
         val jsonString = json.encodeToString(input)

@@ -99,8 +99,7 @@ class MockRunSession(private val threadId: String) : RunSession {
         ))
         
         emit(TextMessageStartEvent(
-            messageId = "msg-${System.currentTimeMillis()}",
-            role = "assistant"
+            messageId = "msg-${System.currentTimeMillis()}"
         ))
         
         emit(RunFinishedEvent(
