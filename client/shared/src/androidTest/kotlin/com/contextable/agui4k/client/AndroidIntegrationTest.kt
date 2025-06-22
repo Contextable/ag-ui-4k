@@ -94,7 +94,7 @@ class AndroidIntegrationTest {
 
     @Test
     fun testPlatformName() {
-        val platformName = com.contextable.agui4k.client.util.getPlatformName()
+        val platformName = com.contextable.agui4k.sample.client.util.getPlatformName()
         assertEquals("Android", platformName)
         println("✓ Platform name is correct: $platformName")
     }

@@ -146,6 +146,44 @@ android {
         unitTests {
             isReturnDefaultValues = true
         }
+        
+        managedDevices {
+            allDevices {
+                // Create a pixel 8 API 34 device for testing
+                create<com.android.build.api.dsl.ManagedVirtualDevice>("pixel8Api34") {
+                    device = "Pixel 8"
+                    apiLevel = 34
+                    systemImageSource = "aosp"
+                }
+                
+                // Create a pixel 6 API 33 device for broader compatibility testing
+                create<com.android.build.api.dsl.ManagedVirtualDevice>("pixel6Api33") {
+                    device = "Pixel 6"
+                    apiLevel = 33
+                    systemImageSource = "aosp"
+                }
+                
+                // Create a tablet device for testing different form factors
+                create<com.android.build.api.dsl.ManagedVirtualDevice>("pixel7TabletApi34") {
+                    device = "Pixel Tablet"
+                    apiLevel = 34
+                    systemImageSource = "aosp"
+                }
+            }
+            
+            groups {
+                create("phone") {
+                    targetDevices.add(allDevices["pixel8Api34"])
+                    targetDevices.add(allDevices["pixel6Api33"])
+                }
+                
+                create("all") {
+                    targetDevices.add(allDevices["pixel8Api34"])
+                    targetDevices.add(allDevices["pixel6Api33"])
+                    targetDevices.add(allDevices["pixel7TabletApi34"])
+                }
+            }
+        }
     }
 }
 
