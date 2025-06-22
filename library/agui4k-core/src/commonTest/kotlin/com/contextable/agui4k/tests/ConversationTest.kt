@@ -1,6 +1,5 @@
 package com.contextable.agui4k.tests
 
-import com.contextable.agui4k.core.serialization.AgUiJson
 import com.contextable.agui4k.core.types.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -10,8 +9,6 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class ConversationTest {
-
-    private val json = AgUiJson
 
     @Test
     fun testThreadCreation() {
@@ -196,21 +193,6 @@ class ConversationTest {
         assertTrue(RunStatus.ERROR in RunStatus.entries)
     }
 
-    @Test
-    fun testRunErrorSerialization() {
-        val error = RunError(
-            message = "Test error",
-            code = "TEST_001",
-            timestamp = Instant.fromEpochMilliseconds(1234567890000)
-        )
-
-        val jsonString = json.encodeToString(RunError.serializer(), error)
-        val decoded = json.decodeFromString(RunError.serializer(), jsonString)
-
-        assertEquals(error.message, decoded.message)
-        assertEquals(error.code, decoded.code)
-        assertEquals(error.timestamp, decoded.timestamp)
-    }
 
     @Test
     fun testAgentStateCreation() {
@@ -339,55 +321,7 @@ class ConversationTest {
         assertNotNull(run.endTime)
     }
 
-    @Test
-    fun testThreadSerialization() {
-        val thread = Thread(
-            threadId = "thread_test",
-            runs = listOf(
-                Run(
-                    runId = "run_1",
-                    threadId = "thread_test",
-                    status = RunStatus.COMPLETED,
-                    startTime = Clock.System.now()
-                )
-            ),
-            metadata = buildJsonObject {
-                put("test", true)
-            }
-        )
 
-        val jsonString = json.encodeToString(Thread.serializer(), thread)
-        val decoded = json.decodeFromString(Thread.serializer(), jsonString)
-
-        assertEquals(thread.threadId, decoded.threadId)
-        assertEquals(thread.runs.size, decoded.runs.size)
-        assertEquals(thread.runs[0].runId, decoded.runs[0].runId)
-        assertNotNull(decoded.metadata)
-    }
-
-    @Test
-    fun testAgentStateSerialization() {
-        val agentState = AgentState(
-            globalState = buildJsonObject {
-                put("initialized", true)
-            },
-            threads = mapOf(
-                "thread_1" to Thread(threadId = "thread_1")
-            ),
-            currentThreadId = "thread_1",
-            metadata = buildJsonObject {
-                put("version", "1.0")
-            }
-        )
-
-        val jsonString = json.encodeToString(AgentState.serializer(), agentState)
-        val decoded = json.decodeFromString(AgentState.serializer(), jsonString)
-
-        assertNotNull(decoded.globalState)
-        assertEquals(1, decoded.threads.size)
-        assertEquals("thread_1", decoded.currentThreadId)
-        assertNotNull(decoded.metadata)
-    }
 
     @Test
     fun testEmptyThreadOperations() {

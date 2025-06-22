@@ -3,7 +3,23 @@ package com.contextable.agui4k.core.types
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonClassDiscriminator
+
+/**
+ * Base interface for all message types in the AG-UI protocol.
+ * The @JsonClassDiscriminator tells the library to use the "role" property
+ * to identify which subclass to serialize to or deserialize from.
+ */
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+@JsonClassDiscriminator("role")
+sealed interface Message {
+    val id: String
+    val role: Role
+    val content: String?
+    val name: String?
+}
+
 
 /**
  * Enum representing the possible roles a message sender can have.
@@ -24,18 +40,6 @@ enum class Role {
 
     @SerialName("tool")
     TOOL
-}
-
-/**
- * Base interface for all message types in the AG-UI protocol.
- */
-@OptIn(ExperimentalSerializationApi::class)
-@Serializable(with = MessageSerializer::class)
-sealed interface Message {
-    val id: String
-    val role: Role
-    val content: String?
-    val name: String?
 }
 
 /**
@@ -101,7 +105,10 @@ data class ToolMessage(
 @Serializable
 data class ToolCall(
     val id: String,
-    val type: String = "function",
+    // We need to rename this field in order for the kotlinx.serialization to work. This
+    // insures that it does not clash with the "type" discriminator used in the Events.
+    @SerialName("type")
+    val callType: String = "function",
     val function: FunctionCall
 )
 

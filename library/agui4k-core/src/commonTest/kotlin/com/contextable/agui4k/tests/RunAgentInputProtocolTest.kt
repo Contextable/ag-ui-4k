@@ -1,21 +1,15 @@
 package com.contextable.agui4k.tests
 
+import com.contextable.agui4k.core.types.AgUiJson
 import com.contextable.agui4k.core.types.*
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
-import kotlinx.datetime.Clock
 import kotlin.test.*
 
 @OptIn(ExperimentalSerializationApi::class)
 class RunAgentInputProtocolTest {
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        encodeDefaults = true
-        explicitNulls = false
-    }
+    private val json = AgUiJson
 
     @Test
     fun testMinimalRunAgentInput() {
@@ -67,7 +61,6 @@ class RunAgentInputProtocolTest {
                 toolCalls = listOf(
                     ToolCall(
                         id = "call_weather",
-                        type = "function",
                         function = FunctionCall(
                             name = "get_weather",
                             arguments = """{"location": "current"}"""

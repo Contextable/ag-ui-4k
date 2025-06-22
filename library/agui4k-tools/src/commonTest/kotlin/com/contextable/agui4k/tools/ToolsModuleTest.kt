@@ -25,7 +25,6 @@ class ToolsModuleTest {
         // Test tool execution
         val toolCall = ToolCall(
             id = "test-1",
-            type = "function",
             function = FunctionCall(
                 name = "echo",
                 arguments = """{"message": "Hello, World!"}"""
@@ -46,7 +45,6 @@ class ToolsModuleTest {
         // Test valid execution
         val toolCall = ToolCall(
             id = "test-1",
-            type = "function",
             function = FunctionCall(
                 name = "echo",
                 arguments = """{"message": "test message"}"""
@@ -67,7 +65,6 @@ class ToolsModuleTest {
         // Test addition
         val addCall = ToolCall(
             id = "test-1",
-            type = "function",
             function = FunctionCall(
                 name = "calculator",
                 arguments = """{"operation": "add", "a": 5, "b": 3}"""
@@ -83,7 +80,6 @@ class ToolsModuleTest {
         // Test division by zero
         val divideByZeroCall = ToolCall(
             id = "test-2",
-            type = "function",
             function = FunctionCall(
                 name = "calculator",
                 arguments = """{"operation": "divide", "a": 5, "b": 0}"""

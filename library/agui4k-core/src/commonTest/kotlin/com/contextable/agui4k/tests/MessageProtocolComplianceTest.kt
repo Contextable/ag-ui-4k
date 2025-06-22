@@ -1,5 +1,6 @@
 package com.contextable.agui4k.tests
 
+import com.contextable.agui4k.core.types.AgUiJson
 import com.contextable.agui4k.core.types.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.*
@@ -8,12 +9,7 @@ import kotlin.test.*
 @OptIn(ExperimentalSerializationApi::class)
 class MessageProtocolComplianceTest {
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        encodeDefaults = true
-        explicitNulls = false
-    }
+    private val json = AgUiJson
 
     // Test that messages follow AG-UI protocol format
 
@@ -88,7 +84,6 @@ class MessageProtocolComplianceTest {
         val toolCalls = listOf(
             ToolCall(
                 id = "call_abc123",
-                type = "function",
                 function = FunctionCall(
                     name = "get_weather",
                     arguments = """{"location": "New York", "unit": "fahrenheit"}"""
@@ -96,7 +91,6 @@ class MessageProtocolComplianceTest {
             ),
             ToolCall(
                 id = "call_def456",
-                type = "function",
                 function = FunctionCall(
                     name = "get_time",
                     arguments = """{"timezone": "EST"}"""
@@ -145,7 +139,6 @@ class MessageProtocolComplianceTest {
             toolCalls = listOf(
                 ToolCall(
                     id = "call_123",
-                    type = "function",
                     function = FunctionCall(name = "action", arguments = "{}")
                 )
             )
@@ -235,7 +228,6 @@ class MessageProtocolComplianceTest {
                 toolCalls = listOf(
                     ToolCall(
                         id = "tc1",
-                        type = "function",
                         function = FunctionCall("greet", "{}")
                     )
                 )
@@ -308,7 +300,6 @@ class MessageProtocolComplianceTest {
         testCases.forEach { args ->
             val toolCall = ToolCall(
                 id = "test_call",
-                type = "function",
                 function = FunctionCall(
                     name = "test_function",
                     arguments = args

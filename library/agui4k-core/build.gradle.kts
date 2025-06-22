@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.contextable.agui4k"
-version = "0.1.7"
+version = "0.1.6"
 
 repositories {
     google()

@@ -8,7 +8,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
-object MessageSerializer : KSerializer<Message> {
+object Encoder : KSerializer<Message> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("Message")
 
     override fun serialize(encoder: Encoder, value: Message) {

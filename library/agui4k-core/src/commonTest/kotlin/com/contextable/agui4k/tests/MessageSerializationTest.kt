@@ -1,20 +1,15 @@
 // Add to library/src/commonTest/kotlin/com/contextable/agui4k/tests/MessageSerializationTest.kt
 package com.contextable.agui4k.tests
 
+import com.contextable.agui4k.core.types.AgUiJson
 import com.contextable.agui4k.core.types.*
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
 class MessageSerializationTest {
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        encodeDefaults = true
-        explicitNulls = false
-    }
+    private val json = AgUiJson
 
     @Test
     fun testUserMessageSerialization() {
@@ -41,7 +36,6 @@ class MessageSerializationTest {
             toolCalls = listOf(
                 ToolCall(
                     id = "call_789",
-                    type = "function",
                     function = FunctionCall(
                         name = "get_weather",
                         arguments = """{"location": "Paris"}"""

@@ -1,6 +1,6 @@
 package com.contextable.agui4k.transport
 
-import com.contextable.agui4k.core.serialization.AgUiJson
+import com.contextable.agui4k.core.types.AgUiJson
 import com.contextable.agui4k.core.types.*
 import io.ktor.client.*
 import io.ktor.client.plugins.*
@@ -8,10 +8,8 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.sse.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import io.ktor.utils.io.*
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.coroutines.channels.*
@@ -19,7 +17,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.decodeFromJsonElement
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}

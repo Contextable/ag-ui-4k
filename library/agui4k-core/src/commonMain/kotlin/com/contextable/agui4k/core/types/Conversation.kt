@@ -2,14 +2,12 @@ package com.contextable.agui4k.core.types
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
 /**
  * Represents a conversation thread containing multiple runs.
  * This is the top-level container for all messages in a conversation.
  */
-@Serializable
 data class Thread(
     val threadId: String,
     val runs: List<Run> = emptyList(),
@@ -35,7 +33,6 @@ data class Thread(
  * Represents a single execution run within a thread.
  * Each run contains messages exchanged during that execution.
  */
-@Serializable
 data class Run(
     val runId: String,
     val threadId: String,
@@ -62,7 +59,6 @@ data class Run(
 /**
  * Status of a run execution.
  */
-@Serializable
 enum class RunStatus {
     STARTED,
     COMPLETED,
@@ -72,7 +68,6 @@ enum class RunStatus {
 /**
  * Error information for a failed run.
  */
-@Serializable
 data class RunError(
     val message: String,
     val code: String? = null,
@@ -83,7 +78,6 @@ data class RunError(
  * Global agent state separate from conversation state.
  * This includes the global state and all conversation threads.
  */
-@Serializable
 data class AgentState(
     val globalState: JsonElement? = null,
     val threads: Map<String, Thread> = emptyMap(),

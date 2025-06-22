@@ -285,7 +285,6 @@ private class ToolCallBuilder(
     fun build(): ToolCall {
         return ToolCall(
             id = id,
-            type = "function",
             function = FunctionCall(
                 name = name,
                 arguments = argumentsBuilder.toString()
