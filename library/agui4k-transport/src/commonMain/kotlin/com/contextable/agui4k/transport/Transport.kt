@@ -3,6 +3,7 @@ package com.contextable.agui4k.transport
 import com.contextable.agui4k.core.types.Context
 import com.contextable.agui4k.core.types.Message
 import com.contextable.agui4k.core.types.Tool
+import kotlinx.serialization.json.JsonElement
 
 /**
  * Client-side transport interface for communicating with AG-UI agents.
@@ -31,10 +32,10 @@ interface ClientTransport {
         messages: List<Message>, 
         threadId: String? = null, 
         runId: String? = null, 
-        state: Any? = null,
+        state: JsonElement? = null,
         tools: List<Tool>? = null,
         context: List<Context>? = null,
-        forwardedProps: Any? = null
+        forwardedProps: JsonElement? = null
     ): RunSession
     
 }

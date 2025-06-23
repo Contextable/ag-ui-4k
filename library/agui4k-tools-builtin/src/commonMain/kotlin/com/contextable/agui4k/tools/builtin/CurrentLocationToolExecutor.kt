@@ -92,7 +92,7 @@ class CurrentLocationToolExecutor(
                     put("latitude", response.latitude!!)
                     put("longitude", response.longitude!!)
                     put("accuracy", response.accuracyMeters ?: 0.0)
-                    put("timestamp", response.timestamp ?: System.currentTimeMillis())
+                    put("timestamp", response.timestamp ?: kotlinx.datetime.Clock.System.now().toEpochMilliseconds())
                     
                     if (response.address != null) {
                         put("address", response.address)
@@ -254,7 +254,7 @@ class StubLocationProvider : LocationProvider {
             longitude = -122.083922,
             accuracyMeters = 10.0,
             altitude = 30.0,
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             address = if (request.includeAddress) "1600 Amphitheatre Pkwy, Mountain View, CA 94043, USA" else null,
             message = "Mock location provided (JVM stub implementation)"
         )
