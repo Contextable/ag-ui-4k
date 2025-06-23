@@ -1,4 +1,4 @@
-package com.contextable.agui4k.tests
+package com.contextable.agui4k.client.state
 
 import com.contextable.agui4k.core.types.*
 import kotlinx.datetime.Clock
@@ -8,7 +8,7 @@ import kotlin.test.*
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-class ConversationTest {
+class ConversationStateTest {
 
     @Test
     fun testThreadCreation() {

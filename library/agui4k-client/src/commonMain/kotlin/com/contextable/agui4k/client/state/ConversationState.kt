@@ -1,5 +1,6 @@
-package com.contextable.agui4k.core.types
+package com.contextable.agui4k.client.state
 
+import com.contextable.agui4k.core.types.Message
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonElement
