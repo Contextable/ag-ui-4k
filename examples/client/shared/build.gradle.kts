@@ -54,6 +54,9 @@ kotlin {
 
                 // DateTime
                 implementation(libs.kotlinx.datetime)
+
+                // Base64 encoding/decoding
+                implementation(libs.okio)
             }
         }
 

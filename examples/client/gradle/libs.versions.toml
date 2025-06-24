@@ -15,6 +15,7 @@ android-gradle = "8.10.1"
 kotlin-logging = "3.0.5"
 logback-android = "3.0.0"
 multiplatform-settings-coroutines = "1.2.0"
+okio = "3.13.0"
 runner = "1.6.2"
 slf4j = "2.0.9"
 ui-test-junit4 = "1.8.3"
@@ -55,6 +56,7 @@ kotlin-logging = { module = "io.github.microutils:kotlin-logging", version.ref =
 logback-android = { module = "com.github.tony19:logback-android", version.ref = "logback-android" }
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings-coroutines" }
 multiplatform-settings-coroutines = { module = "com.russhwolf:multiplatform-settings-coroutines", version.ref = "multiplatform-settings-coroutines" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 runner = { module = "androidx.test:runner", version.ref = "runner" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "ui-test-junit4" }
