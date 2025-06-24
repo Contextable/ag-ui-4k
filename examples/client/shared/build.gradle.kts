@@ -28,71 +28,71 @@ kotlin {
                 implementation(compose.components.uiToolingPreview)
 
                 // ag-ui-4k library - new multi-module structure
-                implementation("com.contextable.agui4k:agui4k-core:0.1.7")
-                implementation("com.contextable.agui4k:agui4k-transport:0.1.7")
-                implementation("com.contextable.agui4k:agui4k-client:0.1.7")
-                implementation("com.contextable.agui4k:agui4k-tools:0.1.7")
-                implementation("com.contextable.agui4k:agui4k-tools-builtin:0.1.7")
+                implementation(libs.agui4k.core)
+                implementation(libs.agui4k.transport)
+                implementation(libs.agui4k.client)
+                implementation(libs.agui4k.tools)
+                implementation(libs.agui4k.tools.builtin)
 
                 // Navigation
-                implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")
-                implementation("cafe.adriel.voyager:voyager-screenmodel:1.0.0")
-                implementation("cafe.adriel.voyager:voyager-transitions:1.0.0")
+                implementation(libs.voyager.navigator)
+                implementation(libs.voyager.screenmodel)
+                implementation(libs.voyager.transitions)
 
                 // Coroutines
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                implementation(libs.kotlinx.coroutines.core)
 
                 // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+                implementation(libs.kotlinx.serialization.json)
 
                 // Preferences
-                implementation("com.russhwolf:multiplatform-settings:1.2.0")
-                implementation("com.russhwolf:multiplatform-settings-coroutines:1.2.0")
+                implementation(libs.multiplatform.settings)
+                implementation(libs.multiplatform.settings.coroutines)
 
                 // Logging
-                implementation("io.github.microutils:kotlin-logging:3.0.5")
+                implementation(libs.kotlin.logging)
 
                 // DateTime
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+                implementation(libs.kotlinx.datetime)
             }
         }
 
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
-                implementation("io.ktor:ktor-client-mock:3.1.3")  // Add this line
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.ktor.client.mock)  // Add this line
             }
         }
 
         val androidMain by getting {
             dependencies {
-                api("androidx.activity:activity-compose:1.10.1")
-                api("androidx.appcompat:appcompat:1.7.1")
-                api("androidx.core:core-ktx:1.16.0")
-                implementation("com.github.tony19:logback-android:3.0.0")
+                api(libs.activity.compose)
+                api(libs.appcompat)
+                api(libs.core.ktx)
+                implementation(libs.logback.android)
             }
         }
 
         val androidUnitTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("junit:junit:4.13.2")
+                implementation(libs.junit)
             }
         }
 
         val androidInstrumentedTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("androidx.test:runner:1.6.2")
-                implementation("androidx.test.ext:junit:1.2.1")
-                implementation("androidx.test:core:1.6.1")
+                implementation(libs.runner)
+                implementation(libs.ext.junit)
+                implementation(libs.core)
 
                 // Fixed Compose testing dependencies with explicit versions
-                implementation("androidx.compose.ui:ui-test-junit4:1.8.3")
+                implementation(libs.ui.test.junit4)
                 implementation("androidx.compose.ui:ui-test-manifest:1.8.3")
-                implementation("androidx.activity:activity-compose:1.10.1")
-                implementation("androidx.compose.ui:ui-tooling:1.8.3")
+                implementation(libs.activity.compose)
+                implementation(libs.androidx.ui.tooling)
             }
         }
 
@@ -113,7 +113,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.contextable.agui4k.sample.client"
+    namespace = "com.contextable.agui4k.example.client"
     compileSdk = 36
 
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")

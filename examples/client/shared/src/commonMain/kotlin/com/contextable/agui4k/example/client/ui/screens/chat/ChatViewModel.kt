@@ -2,13 +2,10 @@ package com.contextable.agui4k.example.client.ui.screens.chat
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import com.contextable.agui4k.client.StatefulClient
-import com.contextable.agui4k.transport.HttpClientTransport
-import com.contextable.agui4k.tools.DefaultToolRegistry
+import com.contextable.agui4k.client.AgentClient
 import com.contextable.agui4k.tools.builtin.ConfirmationToolExecutor
 import com.contextable.agui4k.tools.builtin.ConfirmationHandler
 import com.contextable.agui4k.tools.builtin.ConfirmationRequest
-import com.contextable.agui4k.transport.HttpClientTransportConfig
 import com.contextable.agui4k.example.client.data.auth.AuthManager
 import com.contextable.agui4k.example.client.data.model.AgentConfig
 import com.contextable.agui4k.example.client.data.repository.AgentRepository
@@ -19,6 +16,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
@@ -74,10 +74,11 @@ class ChatViewModel : ScreenModel {
     private val _state = MutableStateFlow(ChatState())
     val state: StateFlow<ChatState> = _state.asStateFlow()
 
-    private var currentClient: StatefulClient? = null
+    private var currentClient: AgentClient? = null
     private var currentJob: Job? = null
     private var currentThreadId: String? = null
     private val streamingMessages = mutableMapOf<String, StringBuilder>()
+    private var pendingConfirmationContinuation: CancellableContinuation<Boolean>? = null
 
     init {
         screenModelScope.launch {
@@ -142,29 +143,41 @@ class ChatViewModel : ScreenModel {
             val headers = agentConfig.customHeaders.toMutableMap()
             authManager.applyAuth(agentConfig.authMethod, headers)
 
-            // Create new HTTP transport
-            val transportConfig = HttpClientTransportConfig(
-                url = agentConfig.url,
-                headers = headers
-            )
-            val transport = HttpClientTransport(transportConfig)
-            
-            // Create tool registry with built-in tools
-            val toolRegistry = DefaultToolRegistry().apply {
-                // Register confirmation tool with a handler that integrates with our UI
-                val confirmationHandler = object : ConfirmationHandler {
-                    override suspend fun requestConfirmation(request: ConfirmationRequest): Boolean {
-                        // The UI will handle showing the dialog - we'll wait for the response
-                        // For now, always return false to prevent automatic execution
-                        // The actual confirmation is handled via the UI dialog
-                        return false
+            // Create confirmation tool with a handler that integrates with our UI
+            val confirmationHandler = object : ConfirmationHandler {
+                override suspend fun requestConfirmation(request: ConfirmationRequest): Boolean {
+                    // Show the confirmation dialog and wait for user response
+                    return suspendCancellableCoroutine { continuation ->
+                        _state.update {
+                            it.copy(
+                                pendingConfirmation = UserConfirmationRequest(
+                                    toolCallId = request.toolCallId,
+                                    action = request.message,
+                                    impact = request.importance,
+                                    details = mapOf("details" to (request.details ?: "")),
+                                    timeout = 30
+                                )
+                            )
+                        }
+                        
+                        // Store the continuation so we can resume it when user responds
+                        pendingConfirmationContinuation = continuation
                     }
                 }
-                registerTool(ConfirmationToolExecutor(confirmationHandler))
             }
+            val confirmationTool = ConfirmationToolExecutor(confirmationHandler)
             
-            // Create new stateful client
-            currentClient = StatefulClient(transport, toolRegistry = toolRegistry)
+            // Create new agent client with the new API
+            currentClient = AgentClient(agentConfig.url) {
+                // Add all headers (including auth headers set by AuthManager)
+                this.headers.putAll(headers)
+                
+                // Add tools
+                tools.add(confirmationTool.tool)
+                
+                // Enable history maintenance for conversation continuity
+                maintainHistory = true
+            }
             
             // Generate new thread ID for this session
             currentThreadId = "thread_${Clock.System.now().toEpochMilliseconds()}"
@@ -199,6 +212,11 @@ class ChatViewModel : ScreenModel {
         toolCallBuffer.clear()
         pendingToolCalls.clear()
         ephemeralMessageIds.clear()
+        
+        // Cancel any pending confirmations
+        pendingConfirmationContinuation?.cancel()
+        pendingConfirmationContinuation = null
+        
         _state.update {
             it.copy(
                 isConnected = false,
@@ -231,9 +249,9 @@ class ChatViewModel : ScreenModel {
             _state.update { it.copy(isLoading = true) }
 
             try {
-                currentClient?.continueConversation(
-                    content = content,
-                    threadId = currentThreadId
+                currentClient?.chat(
+                    message = content,
+                    threadId = currentThreadId ?: "default"
                 )?.collect { event ->
                     handleAgentEvent(event)
                 }
@@ -295,41 +313,12 @@ class ChatViewModel : ScreenModel {
 
             is ToolCallEndEvent -> {
                 val toolName = pendingToolCalls[event.toolCallId]
-                val args = toolCallBuffer[event.toolCallId]?.toString()
 
-                logger.debug { "Tool call ended: $toolName with args: $args" }
+                logger.debug { "Tool call ended: $toolName" }
 
-                if (toolName == "user_confirmation" && args != null) {
-                    // Parse the confirmation request
-                    try {
-                        val jsonArgs = Json.parseToJsonElement(args).jsonObject
-                        val action = jsonArgs["action"]?.jsonPrimitive?.content ?: "Unknown action"
-                        val impact = jsonArgs["impact"]?.jsonPrimitive?.content ?: "medium"
-                        val detailsJson = jsonArgs["details"]?.jsonObject ?: emptyMap<String, JsonElement>()
-                        val details = detailsJson.mapValues {
-                            it.value.jsonPrimitive.content
-                        }
-                        val timeout = jsonArgs["timeout_seconds"]?.jsonPrimitive?.intOrNull ?: 30
-
-                        logger.debug { "Showing confirmation dialog for: $action (impact: $impact)" }
-
-                        // Show confirmation dialog
-                        _state.update {
-                            it.copy(
-                                pendingConfirmation = UserConfirmationRequest(
-                                    toolCallId = event.toolCallId,
-                                    action = action,
-                                    impact = impact,
-                                    details = details,
-                                    timeout = timeout
-                                )
-                            )
-                        }
-                    } catch (e: Exception) {
-                        logger.error(e) { "Failed to parse user confirmation request: $args" }
-                    }
-                } else {
-                    // Clear ephemeral message for other tools after a short delay
+                // Clear ephemeral message for tools after a short delay
+                // (confirmation tools will be handled by the confirmation handler)
+                if (toolName != "user_confirmation") {
                     screenModelScope.launch {
                         delay(1000)
                         clearEphemeralMessage(EphemeralType.TOOL_CALL)
@@ -410,20 +399,9 @@ class ChatViewModel : ScreenModel {
     fun confirmAction() {
         val confirmation = _state.value.pendingConfirmation ?: return
 
-        // Send tool response through stateful client
-        screenModelScope.launch {
-            try {
-                currentClient?.sendToolResponse(
-                    threadId = currentThreadId ?: return@launch,
-                    toolCallId = confirmation.toolCallId,
-                    content = """{"status": "confirmed", "user_response": "approved", "timestamp": "${Clock.System.now()}"}"""
-                )?.collect { event ->
-                    handleAgentEvent(event)
-                }
-            } catch (e: Exception) {
-                logger.error(e) { "Error sending tool response" }
-            }
-        }
+        // Resume the confirmation handler with true (confirmed)
+        pendingConfirmationContinuation?.resume(true)
+        pendingConfirmationContinuation = null
 
         // Clear the confirmation dialog
         _state.update { it.copy(pendingConfirmation = null) }
@@ -432,20 +410,9 @@ class ChatViewModel : ScreenModel {
     fun rejectAction() {
         val confirmation = _state.value.pendingConfirmation ?: return
 
-        // Send tool response through stateful client
-        screenModelScope.launch {
-            try {
-                currentClient?.sendToolResponse(
-                    threadId = currentThreadId ?: return@launch,
-                    toolCallId = confirmation.toolCallId,
-                    content = """{"status": "rejected", "user_response": "cancelled", "timestamp": "${Clock.System.now()}"}"""
-                )?.collect { event ->
-                    handleAgentEvent(event)
-                }
-            } catch (e: Exception) {
-                logger.error(e) { "Error sending tool response" }
-            }
-        }
+        // Resume the confirmation handler with false (rejected)
+        pendingConfirmationContinuation?.resume(false)
+        pendingConfirmationContinuation = null
 
         // Clear the confirmation dialog
         _state.update { it.copy(pendingConfirmation = null) }
@@ -498,8 +465,12 @@ class ChatViewModel : ScreenModel {
 
     fun cancelCurrentOperation() {
         currentJob?.cancel()
-        // Note: StatefulClient doesn't have abortRun - we rely on job cancellation
-        _state.update { it.copy(isLoading = false) }
+        
+        // Cancel any pending confirmations
+        pendingConfirmationContinuation?.cancel()
+        pendingConfirmationContinuation = null
+        
+        _state.update { it.copy(isLoading = false, pendingConfirmation = null) }
         finalizeStreamingMessages()
         // Clear ephemeral messages on cancel
         ephemeralMessageIds.keys.toList().forEach { type ->

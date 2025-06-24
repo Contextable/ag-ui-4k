@@ -1,4 +1,4 @@
-package com.contextable.agui4k.sample.client
+package com.contextable.agui4k.example.client
 
 import com.contextable.agui4k.example.client.data.model.AgentConfig
 import com.contextable.agui4k.example.client.data.model.AuthMethod

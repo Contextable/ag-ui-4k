@@ -1,4 +1,4 @@
-package com.contextable.agui4k.sample.client.ui
+package com.contextable.agui4k.example.client.ui
 
 import androidx.compose.ui.test.*
 import com.contextable.agui4k.example.client.ui.screens.chat.DisplayMessage

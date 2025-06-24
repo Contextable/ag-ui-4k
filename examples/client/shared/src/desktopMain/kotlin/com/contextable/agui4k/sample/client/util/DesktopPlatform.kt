@@ -1,4 +1,4 @@
-package com.contextable.agui4k.sample.client.util
+package com.contextable.agui4k.example.client.util
 
 import com.russhwolf.settings.PreferencesSettings
 import com.russhwolf.settings.Settings

@@ -577,11 +577,11 @@ class EventSerializationTest {
             timestamp = 1234567890L
         )
 
-        val jsonString = json.encodeToString(rawEvent)
+        val jsonString = json.encodeToString<BaseEvent>(rawEvent)
         val jsonObj = json.parseToJsonElement(jsonString).jsonObject
 
         // Verify all fields are serialized
-        assertEquals("RAW", jsonObj["eventType"]?.jsonPrimitive?.content)
+        assertEquals("RAW", jsonObj["type"]?.jsonPrimitive?.content)
         assertEquals(innerEvent, jsonObj["event"])
         assertEquals("external-system", jsonObj["source"]?.jsonPrimitive?.content)
         assertEquals(1234567890L, jsonObj["timestamp"]?.jsonPrimitive?.long)
@@ -695,10 +695,11 @@ class EventSerializationTest {
             rawEvent = rawEventData
         )
 
-        val jsonString = json.encodeToString(event)
+        val jsonString = json.encodeToString<BaseEvent>(event)
         val jsonObj = json.parseToJsonElement(jsonString).jsonObject
 
         // Verify all fields including rawEvent
+        assertEquals("RUN_STARTED", jsonObj["type"]?.jsonPrimitive?.content)
         assertEquals("thread-123", jsonObj["threadId"]?.jsonPrimitive?.content)
         assertEquals("run-456", jsonObj["runId"]?.jsonPrimitive?.content)
         assertEquals(1700000000000L, jsonObj["timestamp"]?.jsonPrimitive?.long)
@@ -893,11 +894,13 @@ class EventSerializationTest {
         assertEquals(EventType.RUN_STARTED, runStarted.eventType)
         
         // Serialize and verify the type discriminator matches
-        val jsonString = json.encodeToString(runStarted)
+        val jsonString = json.encodeToString<BaseEvent>(runStarted)
         val jsonObj = json.parseToJsonElement(jsonString).jsonObject
         
-        // With the current structure, only eventType is present in the JSON
-        assertEquals("RUN_STARTED", jsonObj["eventType"]?.jsonPrimitive?.content)
+        // With the @JsonClassDiscriminator, only "type" should be present in the JSON
+        assertEquals("RUN_STARTED", jsonObj["type"]?.jsonPrimitive?.content)
+        // Ensure eventType field is not in JSON
+        assertFalse(jsonObj.containsKey("eventType"))
         
         // When deserializing, the eventType is still correct
         val decoded = json.decodeFromString<RunStartedEvent>(jsonString)
@@ -917,10 +920,10 @@ class EventSerializationTest {
         // No matter what, this will always be RUN_FINISHED when constructed
         assertEquals(EventType.RUN_FINISHED, runFinished.eventType)
         
-        // Test that the proper JSON with correct eventType deserializes correctly
+        // Test that the proper JSON with correct type discriminator deserializes correctly
         val properJson = """
             {
-                "eventType": "RUN_FINISHED",
+                "type": "RUN_FINISHED",
                 "threadId": "t1",
                 "runId": "r1"
             }
@@ -930,8 +933,8 @@ class EventSerializationTest {
         assertEquals(EventType.RUN_FINISHED, decoded.eventType)
         
         // Note: With the current implementation, trying to deserialize JSON with a 
-        // mismatched eventType would fail or produce unexpected results because
-        // the serialization framework expects the eventType to match the class type
+        // mismatched type discriminator would fail or produce unexpected results because
+        // the serialization framework expects the type to match the class type
     }
 
     @Test

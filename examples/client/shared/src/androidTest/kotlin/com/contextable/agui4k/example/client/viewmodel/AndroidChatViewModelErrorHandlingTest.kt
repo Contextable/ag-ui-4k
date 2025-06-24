@@ -1,4 +1,4 @@
-package com.contextable.agui4k.sample.client.viewmodel
+package com.contextable.agui4k.example.client.viewmodel
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -82,7 +82,7 @@ class AndroidChatViewModelErrorHandlingTest {
         // Test that edge case event types don't crash the system with Android context
         
         // Test with empty message IDs (valid non-empty content)
-        viewModel.handleAgentEvent(TextMessageStartEvent("", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent(""))
         viewModel.handleAgentEvent(TextMessageContentEvent("", "Valid content"))
         viewModel.handleAgentEvent(TextMessageEndEvent(""))
 
@@ -95,7 +95,7 @@ class AndroidChatViewModelErrorHandlingTest {
     fun testNullAndEmptyContent() = runTest {
         // Test handling of minimal content in various events with Android context
         
-        viewModel.handleAgentEvent(TextMessageStartEvent("test-msg", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("test-msg"))
         viewModel.handleAgentEvent(TextMessageContentEvent("test-msg", " ")) // Single space is valid
         viewModel.handleAgentEvent(TextMessageEndEvent("test-msg"))
 
@@ -135,7 +135,7 @@ class AndroidChatViewModelErrorHandlingTest {
         viewModel.handleAgentEvent(RunErrorEvent("Connection lost", "NETWORK_ERROR"))
         
         // System should continue working after error
-        viewModel.handleAgentEvent(TextMessageStartEvent("recovery-msg", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("recovery-msg"))
         viewModel.handleAgentEvent(TextMessageContentEvent("recovery-msg", "System recovered on Android"))
         viewModel.handleAgentEvent(TextMessageEndEvent("recovery-msg"))
 
@@ -168,7 +168,7 @@ class AndroidChatViewModelErrorHandlingTest {
         assertTrue(state.messages.size >= initialMessageCount)
         
         // Verify we can still process normal events
-        viewModel.handleAgentEvent(TextMessageStartEvent("normal-msg", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("normal-msg"))
         viewModel.handleAgentEvent(TextMessageContentEvent("normal-msg", "Normal content on Android"))
         viewModel.handleAgentEvent(TextMessageEndEvent("normal-msg"))
         
@@ -198,7 +198,7 @@ class AndroidChatViewModelErrorHandlingTest {
         // Test handling of very long content on Android platform
         val longContent = "Android: " + "x".repeat(10000)
         
-        viewModel.handleAgentEvent(TextMessageStartEvent("long-msg", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("long-msg"))
         viewModel.handleAgentEvent(TextMessageContentEvent("long-msg", longContent))
         viewModel.handleAgentEvent(TextMessageEndEvent("long-msg"))
 

@@ -1,4 +1,4 @@
-package com.contextable.agui4k.sample.client.test
+package com.contextable.agui4k.example.client.test
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import com.contextable.agui4k.example.client.ui.screens.chat.ChatState

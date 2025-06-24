@@ -1,9 +1,9 @@
-package com.contextable.agui4k.sample.client.viewmodel
+package com.contextable.agui4k.example.client.viewmodel
 
 import com.contextable.agui4k.example.client.data.model.AgentConfig
 import com.contextable.agui4k.example.client.data.model.AuthMethod
 import com.contextable.agui4k.example.client.data.repository.AgentRepository
-import com.contextable.agui4k.sample.client.test.TestSettings
+import com.contextable.agui4k.example.client.test.TestSettings
 import com.contextable.agui4k.core.types.*
 import com.contextable.agui4k.example.client.ui.screens.chat.ChatViewModel
 import com.contextable.agui4k.example.client.ui.screens.chat.EphemeralType
@@ -55,8 +55,7 @@ class ChatViewModelEventHandlingTest {
     fun testTextMessageStartEvent() = runTest {
         // Create a TextMessageStartEvent
         val event = TextMessageStartEvent(
-            messageId = "msg-123",
-            role = "assistant"
+            messageId = "msg-123"
         )
 
         // Simulate event handling
@@ -76,8 +75,7 @@ class ChatViewModelEventHandlingTest {
     fun testTextMessageContentEvent() = runTest {
         // First, start a message
         val startEvent = TextMessageStartEvent(
-            messageId = "msg-123",
-            role = "assistant"
+            messageId = "msg-123"
         )
         viewModel.handleAgentEvent(startEvent)
 
@@ -106,7 +104,7 @@ class ChatViewModelEventHandlingTest {
     @Test
     fun testTextMessageEndEvent() = runTest {
         // Start and populate a message
-        viewModel.handleAgentEvent(TextMessageStartEvent("msg-123", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("msg-123"))
         viewModel.handleAgentEvent(TextMessageContentEvent("msg-123", "Complete message"))
         
         // End the message
@@ -191,6 +189,7 @@ class ChatViewModelEventHandlingTest {
 
     @Test
     fun testUserConfirmationToolFlow() = runTest {
+        // NOTE: With new architecture, confirmation dialogs are handled by tool executor
         // Start a user_confirmation tool call
         viewModel.handleAgentEvent(ToolCallStartEvent("confirm-123", "user_confirmation"))
         
@@ -207,13 +206,9 @@ class ChatViewModelEventHandlingTest {
         viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-123", confirmationArgs))
         viewModel.handleAgentEvent(ToolCallEndEvent("confirm-123"))
 
-        // Verify confirmation dialog is shown
+        // With new architecture, confirmation dialog won't be shown from events
         val state = viewModel.state.value
-        assertNotNull(state.pendingConfirmation)
-        assertEquals("confirm-123", state.pendingConfirmation!!.toolCallId)
-        assertEquals("Delete file", state.pendingConfirmation!!.action)
-        assertEquals("high", state.pendingConfirmation!!.impact)
-        assertEquals(30, state.pendingConfirmation!!.timeout)
+        assertNull(state.pendingConfirmation, "Confirmations are now handled by tool executor")
     }
 
     @Test
@@ -316,8 +311,12 @@ class ChatViewModelEventHandlingTest {
             }
         )
         val deltaEvent = StateDeltaEvent(
-            delta = buildJsonObject { 
-                put("change", "new_value") 
+            delta = buildJsonArray { 
+                addJsonObject {
+                    put("op", "replace")
+                    put("path", "/key")
+                    put("value", "new_value")
+                }
             }
         )
         
@@ -336,11 +335,11 @@ class ChatViewModelEventHandlingTest {
         // Test handling multiple concurrent streaming messages
         
         // Start first message
-        viewModel.handleAgentEvent(TextMessageStartEvent("msg-1", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("msg-1"))
         viewModel.handleAgentEvent(TextMessageContentEvent("msg-1", "First "))
         
         // Start second message
-        viewModel.handleAgentEvent(TextMessageStartEvent("msg-2", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("msg-2"))
         viewModel.handleAgentEvent(TextMessageContentEvent("msg-2", "Second "))
         
         // Continue both messages

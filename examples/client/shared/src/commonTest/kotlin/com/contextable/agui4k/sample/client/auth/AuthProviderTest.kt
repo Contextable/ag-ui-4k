@@ -1,4 +1,4 @@
-package com.contextable.agui4k.sample.client.auth
+package com.contextable.agui4k.example.client.auth
 
 import com.contextable.agui4k.example.client.data.auth.ApiKeyAuthProvider
 import com.contextable.agui4k.example.client.data.auth.AuthManager

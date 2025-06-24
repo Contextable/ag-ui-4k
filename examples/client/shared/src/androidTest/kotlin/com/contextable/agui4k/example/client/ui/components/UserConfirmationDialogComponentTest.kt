@@ -1,4 +1,4 @@
-package com.contextable.agui4k.sample.client.ui.components
+package com.contextable.agui4k.example.client.ui.components
 
 import androidx.compose.ui.test.*
 import androidx.test.ext.junit.runners.AndroidJUnit4

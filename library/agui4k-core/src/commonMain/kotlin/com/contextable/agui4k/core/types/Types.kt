@@ -3,6 +3,7 @@ package com.contextable.agui4k.core.types
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -18,7 +19,7 @@ import kotlinx.serialization.json.JsonObject
 sealed class Message {
     abstract val id: String
     // Necessary to deal with Kotlinx polymorphic serialization; without this, there's a conflict.
-    @SerialName("role")
+    // Note: This property is not serialized due to @Transient on implementations - the "role" field comes from @JsonClassDiscriminator
     abstract val messageRole: Role
     abstract val content: String?
     abstract val name: String?
@@ -30,10 +31,15 @@ sealed class Message {
  */
 @Serializable
 enum class Role {
+    @SerialName("developer")
     DEVELOPER,
+    @SerialName("system")
     SYSTEM,
+    @SerialName("assistant")
     ASSISTANT,
+    @SerialName("user")
     USER,
+    @SerialName("tool")
     TOOL
 }
 
@@ -47,6 +53,7 @@ data class DeveloperMessage(
     override val content: String,
     override val name: String? = null
 ) : Message() {
+    @Transient
     override val messageRole: Role = Role.DEVELOPER
 }
 
@@ -60,6 +67,7 @@ data class SystemMessage(
     override val content: String?,
     override val name: String? = null
 ) : Message() {
+    @Transient
     override val messageRole: Role = Role.SYSTEM
 }
 
@@ -74,6 +82,7 @@ data class AssistantMessage(
     override val name: String? = null,
     val toolCalls: List<ToolCall>? = null
 ) : Message() {
+    @Transient
     override val messageRole: Role = Role.ASSISTANT
 }
 
@@ -87,6 +96,7 @@ data class UserMessage(
     override val content: String,
     override val name: String? = null
 ) : Message () {
+    @Transient
     override val messageRole: Role = Role.USER
 }
 
@@ -101,6 +111,7 @@ data class ToolMessage(
     val toolCallId: String,
     override val name: String? = null
 ) : Message () {
+    @Transient
     override val messageRole: Role = Role.TOOL
 }
 

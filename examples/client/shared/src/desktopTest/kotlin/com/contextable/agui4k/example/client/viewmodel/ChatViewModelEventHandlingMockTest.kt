@@ -1,4 +1,4 @@
-package com.contextable.agui4k.sample.client.viewmodel
+package com.contextable.agui4k.example.client.viewmodel
 
 import com.contextable.agui4k.core.types.*
 import com.contextable.agui4k.example.client.ui.screens.chat.ChatViewModel
@@ -26,7 +26,7 @@ class ChatViewModelEventHandlingMockTest {
         // Test event handling without actual connection
         
         // Simulate receiving events
-        viewModel.handleAgentEvent(TextMessageStartEvent("msg-1", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("msg-1"))
         viewModel.handleAgentEvent(TextMessageContentEvent("msg-1", "Hello from assistant"))
         viewModel.handleAgentEvent(TextMessageEndEvent("msg-1"))
 
@@ -43,7 +43,7 @@ class ChatViewModelEventHandlingMockTest {
     @Test
     fun testStreamingMessages() = runTest {
         // Test streaming message handling
-        viewModel.handleAgentEvent(TextMessageStartEvent("stream-1", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("stream-1"))
         
         // Verify initial streaming state
         delay(20)
@@ -103,7 +103,7 @@ class ChatViewModelEventHandlingMockTest {
 
     @Test
     fun testConfirmationTool() = runTest {
-        // Test user confirmation tool
+        // NOTE: With new architecture, confirmations are handled by tool executor
         val confirmArgs = """{
             "action": "Delete important file",
             "impact": "high",
@@ -116,12 +116,9 @@ class ChatViewModelEventHandlingMockTest {
 
         delay(50)
 
-        // Should have pending confirmation
+        // With new architecture, confirmation dialog won't be shown from events
         val confirmation = viewModel.state.value.pendingConfirmation
-        assertNotNull(confirmation)
-        assertEquals("Delete important file", confirmation.action)
-        assertEquals("high", confirmation.impact)
-        assertEquals("data.db", confirmation.details["file"])
+        assertNull(confirmation, "Confirmations are now handled by tool executor")
     }
 
     @Test
@@ -172,7 +169,7 @@ class ChatViewModelEventHandlingMockTest {
     @Test
     fun testCancelOperation() = runTest {
         // Test cancelling current operation
-        viewModel.handleAgentEvent(TextMessageStartEvent("cancel-test", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("cancel-test"))
         viewModel.handleAgentEvent(TextMessageContentEvent("cancel-test", "This will be cancelled"))
         
         // Cancel before completion
@@ -192,7 +189,7 @@ class ChatViewModelEventHandlingMockTest {
     fun testMultipleMessagesHandling() = runTest {
         // Test handling multiple messages
         for (i in 1..3) {
-            viewModel.handleAgentEvent(TextMessageStartEvent("msg-$i", "assistant"))
+            viewModel.handleAgentEvent(TextMessageStartEvent("msg-$i"))
             viewModel.handleAgentEvent(TextMessageContentEvent("msg-$i", "Message $i"))
             viewModel.handleAgentEvent(TextMessageEndEvent("msg-$i"))
         }
@@ -208,7 +205,12 @@ class ChatViewModelEventHandlingMockTest {
 
     @Test
     fun testConfirmationActions() = runTest {
-        // Setup confirmation
+        // NOTE: This test is limited without real tool execution
+        // With new architecture, confirmations are handled by tool executor
+        // This test will verify the UI handling methods still work
+        
+        // We can't trigger a real confirmation without tool execution,
+        // so this test is now mostly a placeholder
         val confirmArgs = """{
             "action": "Test action",
             "impact": "low"
@@ -219,9 +221,9 @@ class ChatViewModelEventHandlingMockTest {
         viewModel.handleAgentEvent(ToolCallEndEvent("confirm-1"))
 
         delay(50)
-        assertNotNull(viewModel.state.value.pendingConfirmation)
+        assertNull(viewModel.state.value.pendingConfirmation, "Confirmations are now handled by tool executor")
 
-        // Test confirm action
+        // Test that confirm/reject methods don't crash when called without pending confirmation
         viewModel.confirmAction()
         delay(50)
         
@@ -231,7 +233,8 @@ class ChatViewModelEventHandlingMockTest {
 
     @Test
     fun testRejectAction() = runTest {
-        // Setup confirmation
+        // NOTE: This test is limited without real tool execution
+        // With new architecture, confirmations are handled by tool executor
         val confirmArgs = """{
             "action": "Test action",
             "impact": "low"
@@ -242,13 +245,13 @@ class ChatViewModelEventHandlingMockTest {
         viewModel.handleAgentEvent(ToolCallEndEvent("confirm-1"))
 
         delay(50)
-        assertNotNull(viewModel.state.value.pendingConfirmation)
+        assertNull(viewModel.state.value.pendingConfirmation, "Confirmations are now handled by tool executor")
 
-        // Test reject action
+        // Test that reject method doesn't crash when called without pending confirmation
         viewModel.rejectAction()
         delay(50)
         
-        // Confirmation should be cleared
+        // Should still be null
         assertNull(viewModel.state.value.pendingConfirmation)
     }
 }

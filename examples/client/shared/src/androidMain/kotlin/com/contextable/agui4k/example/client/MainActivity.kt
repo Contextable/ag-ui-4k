@@ -1,4 +1,4 @@
-package com.contextable.agui4k.sample.client
+package com.contextable.agui4k.example.client
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

@@ -1,4 +1,4 @@
-package com.contextable.agui4k.sample.client.ui.components
+package com.contextable.agui4k.example.client.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.test.*

@@ -20,7 +20,7 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "com.contextable.agui4k.sample.client.MainKt"
+        mainClass = "com.contextable.agui4k.example.client.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
@@ -33,7 +33,7 @@ compose.desktop {
             }
 
             macOS {
-                bundleID = "com.contextable.agui4k.sample.client"
+                bundleID = "com.contextable.agui4k.example.client"
             }
         }
     }

@@ -1,11 +1,11 @@
-package com.contextable.agui4k.sample.client.viewmodel
+package com.contextable.agui4k.example.client.viewmodel
 
 import com.contextable.agui4k.example.client.ui.screens.chat.MessageRole
 import com.contextable.agui4k.example.client.data.model.AgentConfig
 import com.contextable.agui4k.example.client.data.model.AuthMethod
 import com.contextable.agui4k.example.client.data.repository.AgentRepository
-import com.contextable.agui4k.sample.client.test.TestSettings
-import com.contextable.agui4k.sample.client.test.TestChatViewModel
+import com.contextable.agui4k.example.client.test.TestSettings
+import com.contextable.agui4k.example.client.test.TestChatViewModel
 import com.contextable.agui4k.example.client.ui.screens.chat.DisplayMessage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest

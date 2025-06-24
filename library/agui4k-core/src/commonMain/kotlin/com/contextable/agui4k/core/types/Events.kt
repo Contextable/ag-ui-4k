@@ -3,6 +3,7 @@ package com.contextable.agui4k.core.types
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonElement
@@ -24,29 +25,45 @@ import kotlinx.serialization.json.JsonElement
 @Serializable
 enum class EventType {
     // Lifecycle Events
+    @SerialName("RUN_STARTED")
     RUN_STARTED,
+    @SerialName("RUN_FINISHED")
     RUN_FINISHED,
+    @SerialName("RUN_ERROR")
     RUN_ERROR,
+    @SerialName("STEP_STARTED")
     STEP_STARTED,
+    @SerialName("STEP_FINISHED")
     STEP_FINISHED,
 
     // Text Message Events
+    @SerialName("TEXT_MESSAGE_START")
     TEXT_MESSAGE_START,
+    @SerialName("TEXT_MESSAGE_CONTENT")
     TEXT_MESSAGE_CONTENT,
+    @SerialName("TEXT_MESSAGE_END")
     TEXT_MESSAGE_END,
 
     // Tool Call Events
+    @SerialName("TOOL_CALL_START")
     TOOL_CALL_START,
+    @SerialName("TOOL_CALL_ARGS")
     TOOL_CALL_ARGS,
+    @SerialName("TOOL_CALL_END")
     TOOL_CALL_END,
 
     // State Management Events
+    @SerialName("STATE_SNAPSHOT")
     STATE_SNAPSHOT,
+    @SerialName("STATE_DELTA")
     STATE_DELTA,
+    @SerialName("MESSAGES_SNAPSHOT")
     MESSAGES_SNAPSHOT,
 
     // Special Events
+    @SerialName("RAW")
     RAW,
+    @SerialName("CUSTOM")
     CUSTOM
 
     // Note: The protocol definitions (i.e., events.py and  events.ts) in the current version of
@@ -72,7 +89,8 @@ enum class EventType {
 @Serializable
 @JsonClassDiscriminator("type")
 sealed class BaseEvent {
-    @SerialName("type")
+    // Necessary to deal with Kotlinx polymorphic serialization; without this, there's a conflict.
+    // Note: This property is not serialized - the "type" field comes from @JsonClassDiscriminator
     abstract val eventType: EventType
     // The type of timestamp is somewhat nebulous.  In the Typescript version of the protocol,
     // it is an optional number which would be "Double?" in Kotlin.  But in the Python version,
@@ -92,6 +110,7 @@ data class RunStartedEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.RUN_STARTED
 }
 
@@ -103,6 +122,7 @@ data class RunFinishedEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.RUN_FINISHED
 }
 
@@ -114,6 +134,7 @@ data class RunErrorEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.RUN_ERROR
 }
 
@@ -124,6 +145,7 @@ data class StepStartedEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.STEP_STARTED
 }
 
@@ -134,6 +156,7 @@ data class StepFinishedEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.STEP_FINISHED
 }
 
@@ -146,6 +169,7 @@ data class TextMessageStartEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.TEXT_MESSAGE_START
     // Needed for serialization/deserialization for protocol correctness
     val role : String = "assistant"
@@ -159,6 +183,7 @@ data class TextMessageContentEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.TEXT_MESSAGE_CONTENT
     init {
         require(delta.isNotEmpty()) { "Text message content delta cannot be empty" }
@@ -172,6 +197,7 @@ data class TextMessageEndEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.TEXT_MESSAGE_END
 }
 
@@ -186,6 +212,7 @@ data class ToolCallStartEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.TOOL_CALL_START
 }
 
@@ -197,6 +224,7 @@ data class ToolCallArgsEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.TOOL_CALL_ARGS
 }
 
@@ -207,6 +235,7 @@ data class ToolCallEndEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.TOOL_CALL_END
 }
 
@@ -219,6 +248,7 @@ data class StateSnapshotEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.STATE_SNAPSHOT
 }
 
@@ -229,6 +259,7 @@ data class StateDeltaEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.STATE_DELTA
 }
 
@@ -239,6 +270,7 @@ data class MessagesSnapshotEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.MESSAGES_SNAPSHOT
 }
 
@@ -252,6 +284,7 @@ data class RawEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.RAW
 }
 
@@ -263,5 +296,6 @@ data class CustomEvent(
     override val timestamp: Long? = null,
     override val rawEvent: JsonElement? = null
 ) : BaseEvent () {
+    @Transient
     override val eventType: EventType = EventType.CUSTOM
 }

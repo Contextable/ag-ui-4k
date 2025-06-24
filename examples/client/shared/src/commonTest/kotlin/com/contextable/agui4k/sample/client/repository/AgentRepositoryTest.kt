@@ -1,9 +1,9 @@
-package com.contextable.agui4k.sample.client.repository
+package com.contextable.agui4k.example.client.repository
 
 import com.contextable.agui4k.example.client.data.model.AgentConfig
 import com.contextable.agui4k.example.client.data.model.AuthMethod
 import com.contextable.agui4k.example.client.data.repository.AgentRepository
-import com.contextable.agui4k.sample.client.test.TestSettings
+import com.contextable.agui4k.example.client.test.TestSettings
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 

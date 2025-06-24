@@ -1,9 +1,9 @@
-package com.contextable.agui4k.sample.client.viewmodel
+package com.contextable.agui4k.example.client.viewmodel
 
 import com.contextable.agui4k.example.client.data.model.AgentConfig
 import com.contextable.agui4k.example.client.data.model.AuthMethod
 import com.contextable.agui4k.example.client.data.repository.AgentRepository
-import com.contextable.agui4k.sample.client.test.TestSettings
+import com.contextable.agui4k.example.client.test.TestSettings
 import com.contextable.agui4k.core.types.*
 import com.contextable.agui4k.example.client.ui.screens.chat.ChatViewModel
 import com.contextable.agui4k.example.client.ui.screens.chat.MessageRole
@@ -161,7 +161,7 @@ class ChatViewModelErrorHandlingTest {
         // Test handling of very long content
         val longContent = "x".repeat(10000)
         
-        viewModel.handleAgentEvent(TextMessageStartEvent("long-msg", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("long-msg"))
         viewModel.handleAgentEvent(TextMessageContentEvent("long-msg", longContent))
         viewModel.handleAgentEvent(TextMessageEndEvent("long-msg"))
 
@@ -181,7 +181,7 @@ class ChatViewModelErrorHandlingTest {
         viewModel.handleAgentEvent(RunErrorEvent("Connection lost", "NETWORK_ERROR"))
         
         // System should continue working after error
-        viewModel.handleAgentEvent(TextMessageStartEvent("recovery-msg", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("recovery-msg"))
         viewModel.handleAgentEvent(TextMessageContentEvent("recovery-msg", "System recovered"))
         viewModel.handleAgentEvent(TextMessageEndEvent("recovery-msg"))
 
@@ -229,7 +229,7 @@ class ChatViewModelErrorHandlingTest {
         assertTrue(state.messages.size >= initialMessageCount)
         
         // Verify we can still process normal events
-        viewModel.handleAgentEvent(TextMessageStartEvent("normal-msg", "assistant"))
+        viewModel.handleAgentEvent(TextMessageStartEvent("normal-msg"))
         viewModel.handleAgentEvent(TextMessageContentEvent("normal-msg", "Normal content"))
         viewModel.handleAgentEvent(TextMessageEndEvent("normal-msg"))
         
