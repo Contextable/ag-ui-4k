@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.contextable.agui4k"
-version = "0.1.8"
+version = "0.2.1"
 
 repositories {
     google()
@@ -113,7 +113,11 @@ android {
     compileSdk = 36
     
     defaultConfig {
-        minSdk = 24
+        minSdk = 26
+    }
+    
+    testOptions {
+        targetSdk = 36
     }
     
     buildToolsVersion = "36.0.0"

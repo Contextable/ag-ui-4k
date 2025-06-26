@@ -7,15 +7,26 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain(17)
     androidTarget {
         compilations.all {
-            kotlinOptions {
-                jvmTarget = "11"
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+                }
             }
         }
     }
 
-    jvm("desktop")
+    jvm("desktop") {
+        compilations.all {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+                }
+            }
+        }
+    }
 
     sourceSets {
         val commonMain by getting {
@@ -28,11 +39,8 @@ kotlin {
                 implementation(compose.components.uiToolingPreview)
 
                 // ag-ui-4k library - new multi-module structure
-                implementation(libs.agui4k.core)
-                implementation(libs.agui4k.transport)
-                implementation(libs.agui4k.client)
-                implementation(libs.agui4k.tools)
-                implementation(libs.agui4k.tools.builtin)
+                implementation("com.contextable.agui4k:agui4k-agent-sdk:0.1.9")
+                implementation("com.contextable.agui4k:agui4k-tools-builtin:0.1.9")
 
                 // Navigation
                 implementation(libs.voyager.navigator)
@@ -74,6 +82,7 @@ kotlin {
                 api(libs.appcompat)
                 api(libs.core.ktx)
                 implementation(libs.logback.android)
+                implementation(libs.ktor.client.android)
             }
         }
 
@@ -90,6 +99,7 @@ kotlin {
                 implementation(libs.runner)
                 implementation(libs.ext.junit)
                 implementation(libs.core)
+                implementation(libs.ktor.client.android)
 
                 // Fixed Compose testing dependencies with explicit versions
                 implementation(libs.ui.test.junit4)
@@ -104,6 +114,7 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation("org.slf4j:slf4j-simple:2.0.9")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
+                implementation(libs.ktor.client.java)
             }
         }
 
@@ -127,10 +138,14 @@ android {
         minSdk = 26
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    
+    testOptions {
+        targetSdk = 36
+    }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     packaging {
@@ -195,3 +210,17 @@ compose.resources {
     packageOfResClass = "agui4kclient.shared.generated.resources"
     generateResClass = auto
 }
+
+// Force Android configurations to use Android-specific Ktor dependencies
+//configurations.matching { it.name.contains("Android") }.all {
+//    resolutionStrategy {
+//        eachDependency {
+//            if (requested.group == "io.ktor" && requested.name.endsWith("-jvm")) {
+//                // For Ktor 3.x, the Android artifacts don't have special names
+//                // We just need to exclude the JVM artifacts
+//                useTarget("${requested.group}:${requested.name.removeSuffix("-jvm")}:${requested.version}")
+//                because("Remove JVM suffix for Android configurations")
+//            }
+//        }
+//    }
+//}

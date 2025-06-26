@@ -2,7 +2,8 @@ package com.contextable.agui4k.example.client.ui.screens.chat
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import com.contextable.agui4k.client.AgentClient
+import com.contextable.agui4k.sdk.AgUi4KAgent
+import com.contextable.agui4k.tools.DefaultToolRegistry
 import com.contextable.agui4k.tools.builtin.ConfirmationToolExecutor
 import com.contextable.agui4k.tools.builtin.ConfirmationHandler
 import com.contextable.agui4k.tools.builtin.ConfirmationRequest
@@ -74,7 +75,7 @@ class ChatViewModel : ScreenModel {
     private val _state = MutableStateFlow(ChatState())
     val state: StateFlow<ChatState> = _state.asStateFlow()
 
-    private var currentClient: AgentClient? = null
+    private var currentClient: AgUi4KAgent? = null
     private var currentJob: Job? = null
     private var currentThreadId: String? = null
     private val streamingMessages = mutableMapOf<String, StringBuilder>()
@@ -167,16 +168,17 @@ class ChatViewModel : ScreenModel {
             }
             val confirmationTool = ConfirmationToolExecutor(confirmationHandler)
             
-            // Create new agent client with the new API
-            currentClient = AgentClient(agentConfig.url) {
+            // Create new agent client with the new SDK API
+            val toolRegistry = DefaultToolRegistry().apply {
+                registerTool(confirmationTool)
+            }
+            
+            currentClient = AgUi4KAgent(url = agentConfig.url) {
                 // Add all headers (including auth headers set by AuthManager)
                 this.headers.putAll(headers)
                 
-                // Add tools
-                tools.add(confirmationTool.tool)
-                
-                // Enable history maintenance for conversation continuity
-                maintainHistory = true
+                // Set tool registry
+                this.toolRegistry = toolRegistry
             }
             
             // Generate new thread ID for this session
@@ -249,7 +251,7 @@ class ChatViewModel : ScreenModel {
             _state.update { it.copy(isLoading = true) }
 
             try {
-                currentClient?.chat(
+                currentClient?.sendMessage(
                     message = content,
                     threadId = currentThreadId ?: "default"
                 )?.collect { event ->

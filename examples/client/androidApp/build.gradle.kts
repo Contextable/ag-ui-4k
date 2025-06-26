@@ -37,11 +37,29 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
     implementation(project(":shared"))
 }
+
+//// Force Android configurations to use Android-specific Ktor dependencies
+//configurations.all {
+//    resolutionStrategy {
+//        eachDependency {
+//            if (requested.group == "io.ktor" && requested.name.endsWith("-jvm")) {
+//                // For Ktor 3.x, the Android artifacts don't have special names
+//                // We just need to exclude the JVM artifacts
+//                useTarget("${requested.group}:${requested.name.removeSuffix("-jvm")}:${requested.version}")
+//                because("Remove JVM suffix for Android configurations")
+//            }
+//        }
+//    }
+//}

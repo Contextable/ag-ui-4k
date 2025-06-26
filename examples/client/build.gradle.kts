@@ -9,6 +9,20 @@ allprojects {
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
         mavenLocal() // For local ag-ui-4k library development
     }
+    
+//    // Force Android configurations to use Android-specific Ktor dependencies across all projects
+//    configurations.matching { it.name.contains("Android") }.all {
+//        resolutionStrategy {
+//            eachDependency {
+//                if (requested.group == "io.ktor" && requested.name.endsWith("-jvm")) {
+//                    // For Ktor 3.x, the Android artifacts don't have special names
+//                    // We just need to exclude the JVM artifacts
+//                    useTarget("${requested.group}:${requested.name.removeSuffix("-jvm")}:${requested.version}")
+//                    because("Remove JVM suffix for Android configurations")
+//                }
+//            }
+//        }
+//    }
 }
 
 koverReport {

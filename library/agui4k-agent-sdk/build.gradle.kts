@@ -66,24 +66,19 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // Core dependencies
-                api(project(":agui4k-core"))
-                
-                // Optional tools integration
+                api(project(":agui4k-client"))
                 api(project(":agui4k-tools"))
+                api(project(":agui4k-tools-builtin"))
                 
                 // Kotlinx libraries
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.datetime)
-
-                // Json Patching
-                implementation(libs.kotlin.json.patch)
                 
-                // HTTP client dependencies - core only (no engine)
+                // Ktor client dependencies (needed for HttpClient)
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.content.negotiation)
                 implementation(libs.ktor.serialization.kotlinx.json)
-                implementation(libs.ktor.client.logging)
                 
                 // Logging
                 implementation(libs.kotlin.logging)
@@ -100,7 +95,6 @@ kotlin {
         
         val androidMain by getting {
             dependencies {
-                // Android-specific HTTP client engine
                 implementation(libs.ktor.client.android)
             }
         }
@@ -113,28 +107,35 @@ kotlin {
             iosX64Main.dependsOn(this)
             iosArm64Main.dependsOn(this)
             iosSimulatorArm64Main.dependsOn(this)
-            dependencies {
-                // iOS-specific HTTP client engine
-                implementation(libs.ktor.client.darwin)
-            }
         }
         
         val jvmMain by getting {
             dependencies {
-                // JVM-specific HTTP client engine
-                implementation(libs.ktor.client.cio)
+                implementation(libs.ktor.client.java)
             }
         }
+        
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.ktor.client.android)
+            }
+        }
+        
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.ktor.client.java)
+            }
+        }
+        
     }
 }
 
 android {
-    namespace = "com.contextable.agui4k.client"
+    namespace = "com.contextable.agui4k.sdk"
     compileSdk = 36
     
     defaultConfig {
         minSdk = 26
-        consumerProguardFiles("consumer-rules.pro")
     }
     
     testOptions {
@@ -154,8 +155,8 @@ publishing {
     publications {
         withType<MavenPublication> {
             pom {
-                name.set("agui4k-client")
-                description.set("Client SDK for the Agent User Interaction Protocol")
+                name.set("agui4k-agent-sdk")
+                description.set("KMP Agent SDK for the AG-UI Protocol")
                 url.set("https://github.com/contextable/ag-ui-4k")
 
                 licenses {

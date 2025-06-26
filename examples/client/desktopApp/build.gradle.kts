@@ -18,6 +18,10 @@ kotlin {
     }
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
 compose.desktop {
     application {
         mainClass = "com.contextable.agui4k.example.client.MainKt"
