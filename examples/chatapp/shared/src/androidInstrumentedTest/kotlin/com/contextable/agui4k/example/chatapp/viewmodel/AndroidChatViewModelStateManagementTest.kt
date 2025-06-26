@@ -97,7 +97,7 @@ class AndroidChatViewModelStateManagementTest {
         
         // Wait for disconnect with multiple checks
         attempts = 0
-        while (attempts < 20 && viewModel.state.value.activeAgent != null) {
+        while (attempts < 20 && (viewModel.state.value.activeAgent != null || viewModel.state.value.isConnected)) {
             delay(50)
             attempts++
         }
@@ -105,7 +105,7 @@ class AndroidChatViewModelStateManagementTest {
         // State should be cleared
         val disconnectedState = viewModel.state.value
         assertNull(disconnectedState.activeAgent, "Active agent should be null after disconnect")
-        assertFalse(disconnectedState.isConnected)
+        assertFalse(disconnectedState.isConnected, "Should be disconnected after agent is cleared")
     }
 
     @Test
@@ -155,8 +155,11 @@ class AndroidChatViewModelStateManagementTest {
         assertEquals(agent2.id, state2.activeAgent?.id)
         assertEquals(agent2.name, state2.activeAgent?.name)
 
-        // Verify messages were cleared on switch
-        assertTrue(state2.messages.isEmpty())
+        // Verify messages were cleared on switch (except for system connection message)
+        assertTrue(state2.messages.size <= 1, "Should have at most 1 system message after agent switch")
+        if (state2.messages.isNotEmpty()) {
+            assertEquals(MessageRole.SYSTEM, state2.messages.first().role, "Only message should be system connection message")
+        }
         assertNull(state2.pendingConfirmation)
     }
 

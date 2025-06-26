@@ -47,6 +47,9 @@ open class AgUi4KAgent(
         ToolExecutionManager(it, ClientToolResponseHandler(agent))
     }
 
+    // Track threads that have already received tools (for stateless agent optimization)
+    private val threadsWithToolsInfo = mutableSetOf<String>()
+
     /**
      * Run agent with explicit input and return observable event stream
      */
@@ -86,21 +89,38 @@ open class AgUi4KAgent(
         }
 
         messages.add(UserMessage(
-            id = generateId("usr"),
+            id = config.userId ?: generateId("usr"),
             content = message
         ))
+
+        // Only send tools on the first run for each thread (stateless agent optimization)
+        val isFirstRunForThread = !threadsWithToolsInfo.contains(threadId)
+        val toolRegistry = config.toolRegistry
+        val toolsToSend = if (isFirstRunForThread && toolRegistry != null) {
+            threadsWithToolsInfo.add(threadId)
+            toolRegistry.getAllTools()
+        } else {
+            emptyList()
+        }
 
         val input = RunAgentInput(
             threadId = threadId,
             runId = generateRunId(),
             messages = messages,
             state = state ?: JsonObject(emptyMap()),
-            tools = config.toolRegistry?.getAllTools() ?: emptyList(),
+            tools = toolsToSend,
             context = config.context,
             forwardedProps = config.forwardedProps
         )
 
         return run(input)
+    }
+
+    /**
+     * Clear the thread tracking for tools (useful for testing or resetting state)
+     */
+    fun clearThreadToolsTracking() {
+        threadsWithToolsInfo.clear()
     }
 
     /**
@@ -126,6 +146,7 @@ open class AgUi4kAgentConfig {
     var systemPrompt: String? = null
     var debug: Boolean = false
     var toolRegistry: ToolRegistry? = null
+    var userId: String? = null  // Persistent user ID
     // State handling is now done through defaultApplyEvents
     val context: MutableList<Context> = mutableListOf()
     var forwardedProps: JsonElement = JsonObject(emptyMap())

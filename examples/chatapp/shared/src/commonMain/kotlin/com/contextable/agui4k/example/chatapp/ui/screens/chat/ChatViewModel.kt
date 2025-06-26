@@ -13,6 +13,7 @@ import com.contextable.agui4k.example.chatapp.data.repository.AgentRepository
 import com.contextable.agui4k.core.types.*
 import com.contextable.agui4k.example.chatapp.util.getPlatformSettings
 import com.contextable.agui4k.example.chatapp.util.Strings
+import com.contextable.agui4k.example.chatapp.util.UserIdManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -66,6 +67,7 @@ class ChatViewModel : ScreenModel {
     private val settings = getPlatformSettings()
     private val agentRepository = AgentRepository.getInstance(settings)
     private val authManager = AuthManager()
+    private val userIdManager = UserIdManager.getInstance(settings)
 
     // Track ephemeral messages by type
     private val ephemeralMessageIds = mutableMapOf<EphemeralType, String>()
@@ -179,6 +181,9 @@ class ChatViewModel : ScreenModel {
                 
                 // Set tool registry
                 this.toolRegistry = toolRegistry
+                
+                // Set persistent user ID
+                this.userId = userIdManager.getUserId()
             }
             
             // Generate new thread ID for this session
