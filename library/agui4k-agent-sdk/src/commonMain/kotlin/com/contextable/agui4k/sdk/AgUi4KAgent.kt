@@ -28,19 +28,19 @@ open class AgUi4KAgent(
 
     // Create HttpAgent which extends AbstractAgent
     protected val agent = HttpAgent(
-        url = url,
-        headers = config.buildHeaders(),
-        httpClient = null,
-        requestTimeout = config.requestTimeout,
-        connectTimeout = config.connectTimeout,
-        config = AgentConfig(
+        config = HttpAgentConfig(
             agentId = null,
             description = "",
             threadId = null,
             initialMessages = emptyList(),
             initialState = JsonObject(emptyMap()),
-            debug = config.debug
-        )
+            debug = config.debug,
+            url = url,
+            headers = config.buildHeaders(),
+            requestTimeout = config.requestTimeout,
+            connectTimeout = config.connectTimeout
+        ),
+        httpClient = null
     )
 
     protected val toolExecutionManager = config.toolRegistry?.let {

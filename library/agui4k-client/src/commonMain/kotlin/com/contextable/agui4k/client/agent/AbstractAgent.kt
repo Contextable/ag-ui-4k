@@ -244,14 +244,31 @@ abstract class AbstractAgent(
 /**
  * Configuration for creating an agent.
  */
-data class AgentConfig(
-    val agentId: String? = null,
-    val description: String = "",
-    val threadId: String? = null,
-    val initialMessages: List<Message> = emptyList(),
-    val initialState: State = JsonObject(emptyMap()),
-    val debug: Boolean = false
+open class AgentConfig(
+    open val agentId: String? = null,
+    open val description: String = "",
+    open val threadId: String? = null,
+    open val initialMessages: List<Message> = emptyList(),
+    open val initialState: State = JsonObject(emptyMap()),
+    open val debug: Boolean = false
 )
+
+/**
+ * HTTP-specific agent configuration extending AgentConfig.
+ * Includes URL and HTTP headers for HTTP-based agent implementations.
+ */
+class HttpAgentConfig(
+    agentId: String? = null,
+    description: String = "",
+    threadId: String? = null,
+    initialMessages: List<Message> = emptyList(),
+    initialState: State = JsonObject(emptyMap()),
+    debug: Boolean = false,
+    val url: String,
+    val headers: Map<String, String> = emptyMap(),
+    val requestTimeout: Long = 600_000L, // 10 minutes
+    val connectTimeout: Long = 30_000L   // 30 seconds
+) : AgentConfig(agentId, description, threadId, initialMessages, initialState, debug)
 
 /**
  * Parameters for running an agent.

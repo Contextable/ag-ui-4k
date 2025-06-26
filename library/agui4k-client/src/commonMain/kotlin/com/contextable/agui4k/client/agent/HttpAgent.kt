@@ -21,19 +21,15 @@ private val logger = KotlinLogging.logger {}
  * Extends AbstractAgent to provide HTTP/SSE transport.
  */
 class HttpAgent(
-    private val url: String,
-    private val headers: Map<String, String> = emptyMap(),
-    private val httpClient: HttpClient? = null,
-    private val requestTimeout: Long = 600_000L, // 10 minutes
-    private val connectTimeout: Long = 30_000L,   // 30 seconds
-    config: AgentConfig = AgentConfig()
+    private val config: HttpAgentConfig,
+    private val httpClient: HttpClient? = null
 ) : AbstractAgent(config) {
     
     private val client: HttpClient
     private val sseParser = SseParser()
     
     init {
-        client = httpClient ?: createPlatformHttpClient(requestTimeout, connectTimeout)
+        client = httpClient ?: createPlatformHttpClient(config.requestTimeout, config.connectTimeout)
     }
     
     /**
@@ -42,10 +38,10 @@ class HttpAgent(
     override fun run(input: RunAgentInput): Flow<BaseEvent> = channelFlow {
         try {
             client.sse(
-                urlString = url,
+                urlString = config.url,
                 request = {
                     method = HttpMethod.Post
-                    this@HttpAgent.headers.forEach { (key, value) ->
+                    config.headers.forEach { (key, value) ->
                         header(key, value)
                     }
                     contentType(ContentType.Application.Json)
@@ -90,19 +86,19 @@ class HttpAgent(
      */
     override fun clone(): AbstractAgent {
         return HttpAgent(
-            url = url,
-            headers = headers,
-            httpClient = httpClient,
-            requestTimeout = requestTimeout,
-            connectTimeout = connectTimeout,
-            config = AgentConfig(
+            config = HttpAgentConfig(
                 agentId = this@HttpAgent.agentId,
                 description = this@HttpAgent.description,
                 threadId = this@HttpAgent.threadId,
                 initialMessages = this@HttpAgent.messages.toList(),
                 initialState = this@HttpAgent.state,
-                debug = this@HttpAgent.debug
-            )
+                debug = this@HttpAgent.debug,
+                url = config.url,
+                headers = config.headers,
+                requestTimeout = config.requestTimeout,
+                connectTimeout = config.connectTimeout
+            ),
+            httpClient = httpClient
         )
     }
     
