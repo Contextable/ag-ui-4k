@@ -44,51 +44,54 @@ class ToolExecutionManager(
         threadId: String?,
         runId: String?
     ): Flow<BaseEvent> = flow {
-        val toolCallBuffer = mutableMapOf<String, ToolCallBuilder>()
-        
-        events.collect { event ->
-            // Emit the original event
-            emit(event)
+        coroutineScope {
+            val toolCallBuffer = mutableMapOf<String, ToolCallBuilder>()
             
-            // Process tool-related events
-            when (event) {
-                is ToolCallStartEvent -> {
-                    logger.info { "Tool call started: ${event.toolCallName} (${event.toolCallId})" }
-                    
-                    val builder = ToolCallBuilder(
-                        id = event.toolCallId,
-                        name = event.toolCallName
-                    )
-                    toolCallBuffer[event.toolCallId] = builder
-                    
-                    _executionEvents.emit(ToolExecutionEvent.Started(event.toolCallId, event.toolCallName))
-                }
+            events.collect { event ->
+                // Emit the original event
+                emit(event)
                 
-                is ToolCallArgsEvent -> {
-                    toolCallBuffer[event.toolCallId]?.appendArguments(event.delta)
-                }
-                
-                is ToolCallEndEvent -> {
-                    val builder = toolCallBuffer.remove(event.toolCallId)
-                    if (builder != null) {
-                        logger.info { "Tool call ended: ${builder.name} (${event.toolCallId})" }
+                // Process tool-related events
+                when (event) {
+                    is ToolCallStartEvent -> {
+                        logger.info { "Tool call started: ${event.toolCallName} (${event.toolCallId})" }
                         
-                        // Execute the tool call asynchronously
-                        val job = CoroutineScope(Dispatchers.Default).launch {
-                            executeToolCall(builder.build(), threadId, runId)
-                        }
-                        activeExecutions[event.toolCallId] = job
+                        val builder = ToolCallBuilder(
+                            id = event.toolCallId,
+                            name = event.toolCallName
+                        )
+                        toolCallBuffer[event.toolCallId] = builder
+                        
+                        _executionEvents.emit(ToolExecutionEvent.Started(event.toolCallId, event.toolCallName))
                     }
-                }
-                
-                is RunFinishedEvent, is RunErrorEvent -> {
-                    // Cancel any pending tool executions when run ends
-                    activeExecutions.values.forEach { it.cancel() }
-                    activeExecutions.clear()
-                }
-                
-                else -> {
-                    // Ignore other events (run lifecycle, messages, steps, state, etc.)
+                    
+                    is ToolCallArgsEvent -> {
+                        toolCallBuffer[event.toolCallId]?.appendArguments(event.delta)
+                    }
+                    
+                    is ToolCallEndEvent -> {
+                        val builder = toolCallBuffer.remove(event.toolCallId)
+                        if (builder != null) {
+                            logger.info { "Tool call ended: ${builder.name} (${event.toolCallId})" }
+                            
+                            // Execute the tool call in this coroutine scope
+                            // This ensures it's tied to the flow's lifecycle
+                            val job = launch {
+                                executeToolCall(builder.build(), threadId, runId)
+                            }
+                            activeExecutions[event.toolCallId] = job
+                        }
+                    }
+                    
+                    is RunFinishedEvent, is RunErrorEvent -> {
+                        // Wait for all active tool executions to complete
+                        activeExecutions.values.forEach { it.join() }
+                        activeExecutions.clear()
+                    }
+                    
+                    else -> {
+                        // Ignore other events (run lifecycle, messages, steps, state, etc.)
+                    }
                 }
             }
         }

@@ -51,9 +51,20 @@ open class AgUi4KAgent(
      * Run agent with explicit input and return observable event stream
      */
     open fun run(input: RunAgentInput): Flow<BaseEvent> {
-        // Delegate to the agent's runAgentObservable method which returns Flow<BaseEvent>
-        // The input already contains messages and state, and the agent will handle them internally
-        return agent.runAgentObservable(input)
+        // Get the raw event stream from the agent
+        val eventStream = agent.runAgentObservable(input)
+        
+        // If we have a tool execution manager, process events through it
+        return if (toolExecutionManager != null) {
+            toolExecutionManager.processEventStream(
+                events = eventStream,
+                threadId = input.threadId,
+                runId = input.runId
+            )
+        } else {
+            // No tools configured, just pass through the events
+            eventStream
+        }
     }
 
     /**
