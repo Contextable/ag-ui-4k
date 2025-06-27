@@ -10,6 +10,7 @@ version = "0.2.1"
 repositories {
     google()
     mavenCentral()
+    mavenLocal()
 }
 
 kotlin {
@@ -54,15 +55,15 @@ kotlin {
         }
     }
     
-    // iOS targets
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
+    // iOS targets still under development
+    // iosX64()
+    // iosArm64()
+    // iosSimulatorArm64()
     
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // Core and tools dependencies from Maven
+                // Core and tools dependencies
                 api("com.contextable.agui4k:agui4k-core:0.2.1")
                 api("com.contextable.agui4k:agui4k-tools:0.2.1")
                 
@@ -89,15 +90,16 @@ kotlin {
             }
         }
         
-        val iosX64Main by getting
-        val iosArm64Main by getting
-        val iosSimulatorArm64Main by getting
-        val iosMain by creating {
-            dependsOn(commonMain)
-            iosX64Main.dependsOn(this)
-            iosArm64Main.dependsOn(this)
-            iosSimulatorArm64Main.dependsOn(this)
-        }
+        // iOS source sets still under development
+        // val iosX64Main by getting
+        // val iosArm64Main by getting
+        // val iosSimulatorArm64Main by getting
+        // val iosMain by creating {
+        //     dependsOn(commonMain)
+        //     iosX64Main.dependsOn(this)
+        //     iosArm64Main.dependsOn(this)
+        //     iosSimulatorArm64Main.dependsOn(this)
+        // }
         
         val jvmMain by getting {
             dependencies {
