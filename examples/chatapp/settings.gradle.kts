@@ -4,6 +4,10 @@ include(":shared")
 include(":androidApp")
 include(":desktopApp")
 
+// Include example tools module
+include(":agui4k-example-tools")
+project(":agui4k-example-tools").projectDir = file("../agui4k-example-tools")
+
 // Library modules will be pulled from Maven instead of local build
 
 pluginManagement {

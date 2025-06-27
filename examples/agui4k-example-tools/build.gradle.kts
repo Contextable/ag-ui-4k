@@ -2,11 +2,9 @@ plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("com.android.library")
-    id("maven-publish")
-    id("signing")
 }
 
-group = "com.contextable.agui4k"
+group = "com.contextable.agui4k.examples"
 version = "0.2.1"
 
 repositories {
@@ -40,7 +38,6 @@ kotlin {
                 }
             }
         }
-        publishLibraryVariants("release")
     }
 
     // JVM target
@@ -65,22 +62,14 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // Core dependencies
-                api(project(":agui4k-client"))
-                api(project(":agui4k-tools"))
+                // Core and tools dependencies from Maven
+                api("com.contextable.agui4k:agui4k-core:0.2.1")
+                api("com.contextable.agui4k:agui4k-tools:0.2.1")
                 
                 // Kotlinx libraries
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.datetime)
-                
-                // Ktor client dependencies (needed for HttpClient)
-                implementation(libs.ktor.client.core)
-                implementation(libs.ktor.client.content.negotiation)
-                implementation(libs.ktor.serialization.kotlinx.json)
-                
-                // Logging
-                implementation(libs.kotlin.logging)
             }
         }
         
@@ -88,13 +77,15 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.ktor.client.mock)
+                // Add agent SDK for integration testing
+                implementation("com.contextable.agui4k:agui4k-agent-sdk:0.2.1")
             }
         }
         
         val androidMain by getting {
             dependencies {
-                implementation(libs.ktor.client.android)
+                // Android-specific file system APIs
+                implementation(libs.core.ktx)
             }
         }
         
@@ -110,27 +101,14 @@ kotlin {
         
         val jvmMain by getting {
             dependencies {
-                implementation(libs.ktor.client.java)
+                // JVM already includes java.nio.file in stdlib
             }
         }
-        
-        val androidUnitTest by getting {
-            dependencies {
-                implementation(libs.ktor.client.android)
-            }
-        }
-        
-        val jvmTest by getting {
-            dependencies {
-                implementation(libs.ktor.client.java)
-            }
-        }
-        
     }
 }
 
 android {
-    namespace = "com.contextable.agui4k.sdk"
+    namespace = "com.contextable.agui4k.example.tools"
     compileSdk = 36
     
     defaultConfig {
@@ -146,51 +124,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
-    }
-}
-
-// Publishing configuration
-publishing {
-    publications {
-        withType<MavenPublication> {
-            pom {
-                name.set("agui4k-agent-sdk")
-                description.set("KMP Agent SDK for the AG-UI Protocol")
-                url.set("https://github.com/contextable/ag-ui-4k")
-
-                licenses {
-                    license {
-                        name.set("MIT License")
-                        url.set("https://opensource.org/licenses/MIT")
-                    }
-                }
-
-                developers {
-                    developer {
-                        id.set("contextable")
-                        name.set("Contextable Team")
-                        email.set("dev@contextable.com")
-                    }
-                }
-
-                scm {
-                    url.set("https://github.com/contextable/ag-ui-4k")
-                    connection.set("scm:git:git://github.com/contextable/ag-ui-4k.git")
-                    developerConnection.set("scm:git:ssh://github.com:contextable/ag-ui-4k.git")
-                }
-            }
-        }
-    }
-}
-
-// Signing configuration
-signing {
-    val signingKey: String? by project
-    val signingPassword: String? by project
-    
-    if (signingKey != null && signingPassword != null) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign(publishing.publications)
     }
 }
 

@@ -29,7 +29,6 @@ agui4k-agent-sdk = { module = "com.contextable.agui4k:agui4k-agent-sdk", version
 agui4k-client = { module = "com.contextable.agui4k:agui4k-client", version.ref = "agui4k-core" }
 agui4k-core = { module = "com.contextable.agui4k:agui4k-core", version.ref = "agui4k-core" }
 agui4k-tools = { module = "com.contextable.agui4k:agui4k-tools", version.ref = "agui4k-core" }
-agui4k-tools-builtin = { module = "com.contextable.agui4k:agui4k-tools-builtin", version.ref = "agui4k-core" }
 agui4k-transport = { module = "com.contextable.agui4k:agui4k-transport", version.ref = "agui4k-core" }
 androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "ui-test-junit4" }
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }

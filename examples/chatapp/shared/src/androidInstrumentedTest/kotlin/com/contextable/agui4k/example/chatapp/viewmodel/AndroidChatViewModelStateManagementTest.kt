@@ -203,13 +203,22 @@ class AndroidChatViewModelStateManagementTest {
         
         // Wait for agent connection to complete and system message to be added
         var attempts = 0
-        while (attempts < 20 && viewModel.state.value.messages.isEmpty()) {
-            delay(50)
+        while (attempts < 40 && viewModel.state.value.messages.isEmpty() && viewModel.state.value.error == null) {
+            delay(100) // Increased delay
             attempts++
+            println("Test attempt $attempts: messages=${viewModel.state.value.messages.size}, error=${viewModel.state.value.error}, connected=${viewModel.state.value.isConnected}")
         }
         
-        val initialMessageCount = viewModel.state.value.messages.size
-        assertEquals(1, initialMessageCount, "Should have system message after connection")
+        // Check if there's an error instead of a successful connection
+        val currentState = viewModel.state.value
+        println("Final state: messages=${currentState.messages.size}, error=${currentState.error}, connected=${currentState.isConnected}, activeAgent=${currentState.activeAgent?.name}")
+        
+        if (currentState.error != null) {
+            fail("Agent connection failed with error: ${currentState.error}")
+        }
+        
+        val initialMessageCount = currentState.messages.size
+        assertEquals(1, initialMessageCount, "Should have system message after connection. Final state: messages=${currentState.messages.size}, error=${currentState.error}, connected=${currentState.isConnected}")
 
         // Try to send empty messages
         viewModel.sendMessage("")

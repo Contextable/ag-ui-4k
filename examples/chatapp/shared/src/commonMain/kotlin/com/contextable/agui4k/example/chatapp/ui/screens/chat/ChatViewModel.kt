@@ -4,9 +4,9 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.contextable.agui4k.sdk.AgUi4KAgent
 import com.contextable.agui4k.tools.DefaultToolRegistry
-import com.contextable.agui4k.tools.builtin.ConfirmationToolExecutor
-import com.contextable.agui4k.tools.builtin.ConfirmationHandler
-import com.contextable.agui4k.tools.builtin.ConfirmationRequest
+import com.contextable.agui4k.example.tools.ConfirmationToolExecutor
+import com.contextable.agui4k.example.tools.ConfirmationHandler
+import com.contextable.agui4k.example.tools.ConfirmationRequest
 import com.contextable.agui4k.example.chatapp.data.auth.AuthManager
 import com.contextable.agui4k.example.chatapp.data.model.AgentConfig
 import com.contextable.agui4k.example.chatapp.data.repository.AgentRepository

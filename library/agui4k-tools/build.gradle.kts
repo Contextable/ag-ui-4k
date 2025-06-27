@@ -82,7 +82,6 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.test)
-                implementation(project(":agui4k-tools-builtin"))
             }
         }
         

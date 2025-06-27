@@ -40,7 +40,7 @@ kotlin {
 
                 // ag-ui-4k library - new multi-module structure
                 implementation(libs.agui4k.agent.sdk)
-                implementation(libs.agui4k.tools.builtin)
+                implementation(project(":agui4k-example-tools"))
 
                 // Navigation
                 implementation(libs.voyager.navigator)
@@ -100,6 +100,7 @@ kotlin {
                 implementation(libs.ext.junit)
                 implementation(libs.core)
                 implementation(libs.ktor.client.android)
+                implementation(project(":agui4k-example-tools"))
 
                 // Fixed Compose testing dependencies with explicit versions
                 implementation(libs.ui.test.junit4)
