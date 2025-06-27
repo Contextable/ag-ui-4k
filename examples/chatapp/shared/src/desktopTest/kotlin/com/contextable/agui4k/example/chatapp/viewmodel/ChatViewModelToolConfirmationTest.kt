@@ -64,55 +64,7 @@ class ChatViewModelToolConfirmationTest {
         assertTrue(toolMessages.isEmpty(), "Confirmation tools should not show ephemeral messages")
     }
 
-    @Ignore("Confirmation dialogs are now handled by tool executor, not event parsing")
-    @Test
-    fun testConfirmationArgsBuilding() = runTest {
-        // NOTE: With the new AgentClient architecture, confirmation dialogs are shown
-        // by the ConfirmationToolExecutor when the tool is executed on the agent side.
-        // Since these unit tests don't have a real agent connection, we can't test
-        // the actual confirmation dialog flow here.
-        
-        // Start confirmation tool
-        viewModel.handleAgentEvent(ToolCallStartEvent("confirm-123", "user_confirmation"))
 
-        // Send args in multiple chunks to test accumulation
-        val argsChunk1 = """{"action": "Delete file", "impact": """
-        val argsChunk2 = """"high", "details": {"file": "important.txt", """
-        val argsChunk3 = """"reason": "cleanup"}, "timeout_seconds": 30}"""
-
-        viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-123", argsChunk1))
-        viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-123", argsChunk2))
-        viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-123", argsChunk3))
-
-        // End the tool call
-        viewModel.handleAgentEvent(ToolCallEndEvent("confirm-123"))
-
-        // With the new architecture, confirmation dialog won't be shown from events
-        val state = viewModel.state.value
-        assertNull(state.pendingConfirmation, "Confirmation dialog is now handled by tool executor")
-    }
-
-    @Ignore("Confirmation dialogs are now handled by tool executor, not event parsing")
-    @Test
-    fun testConfirmationWithMinimalArgs() = runTest {
-        // Test with only required fields
-        viewModel.handleAgentEvent(ToolCallStartEvent("confirm-123", "user_confirmation"))
-        
-        val minimalArgs = """{"action": "Simple action"}"""
-        
-        viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-123", minimalArgs))
-        viewModel.handleAgentEvent(ToolCallEndEvent("confirm-123"))
-
-        // Verify confirmation dialog with defaults
-        val state = viewModel.state.value
-        assertNotNull(state.pendingConfirmation)
-        
-        val confirmation = state.pendingConfirmation!!
-        assertEquals("Simple action", confirmation.action)
-        assertEquals("medium", confirmation.impact) // Should default to medium
-        assertEquals(30, confirmation.timeout) // Should default to 30
-        assertTrue(confirmation.details.isEmpty())
-    }
 
     @Test
     fun testConfirmationWithInvalidJson() = runTest {
@@ -130,142 +82,11 @@ class ChatViewModelToolConfirmationTest {
         assertNull(state.pendingConfirmation, "Invalid JSON should not create confirmation dialog")
     }
 
-    @Ignore("Confirmation dialogs are now handled by tool executor, not event parsing")
-    @Test
-    fun testConfirmActionFlow() = runTest {
-        // Set up confirmation dialog
-        setupConfirmationDialog()
 
-        // Verify dialog is present
-        assertTrue(viewModel.state.value.pendingConfirmation != null)
 
-        // Confirm the action
-        viewModel.confirmAction()
 
-        // Verify dialog is cleared
-        val state = viewModel.state.value
-        assertNull(state.pendingConfirmation, "Confirmation dialog should be cleared after confirmation")
 
-        // Note: Testing the actual tool response message would require mocking
-        // the AgentClient, which is beyond the scope of this unit test
-    }
 
-    @Ignore("Confirmation dialogs are now handled by tool executor, not event parsing")
-    @Test
-    fun testRejectActionFlow() = runTest {
-        // Set up confirmation dialog
-        setupConfirmationDialog()
-
-        // Verify dialog is present
-        assertTrue(viewModel.state.value.pendingConfirmation != null)
-
-        // Reject the action
-        viewModel.rejectAction()
-
-        // Verify dialog is cleared
-        val state = viewModel.state.value
-        assertNull(state.pendingConfirmation, "Confirmation dialog should be cleared after rejection")
-    }
-
-    @Ignore("Confirmation dialogs are now handled by tool executor, not event parsing")
-    @Test
-    fun testMultipleConfirmationToolCalls() = runTest {
-        // Start first confirmation
-        viewModel.handleAgentEvent(ToolCallStartEvent("confirm-1", "user_confirmation"))
-        viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-1", """{"action": "First action"}"""))
-        viewModel.handleAgentEvent(ToolCallEndEvent("confirm-1"))
-
-        // Verify first confirmation is shown
-        val state1 = viewModel.state.value
-        assertNotNull(state1.pendingConfirmation)
-        assertEquals("confirm-1", state1.pendingConfirmation!!.toolCallId)
-
-        // Start second confirmation (should replace first)
-        viewModel.handleAgentEvent(ToolCallStartEvent("confirm-2", "user_confirmation"))
-        viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-2", """{"action": "Second action"}"""))
-        viewModel.handleAgentEvent(ToolCallEndEvent("confirm-2"))
-
-        // Verify second confirmation replaces first
-        val state2 = viewModel.state.value
-        assertNotNull(state2.pendingConfirmation)
-        assertEquals("confirm-2", state2.pendingConfirmation!!.toolCallId)
-        assertEquals("Second action", state2.pendingConfirmation!!.action)
-    }
-
-    @Ignore("Confirmation dialogs are now handled by tool executor, not event parsing")
-    @Test
-    fun testConfirmationTimeoutHandling() = runTest {
-        // Test with custom timeout
-        viewModel.handleAgentEvent(ToolCallStartEvent("confirm-123", "user_confirmation"))
-        
-        val argsWithTimeout = """{"action": "Quick action", "timeout_seconds": 5}"""
-        
-        viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-123", argsWithTimeout))
-        viewModel.handleAgentEvent(ToolCallEndEvent("confirm-123"))
-
-        // Verify custom timeout is set
-        val state = viewModel.state.value
-        assertNotNull(state.pendingConfirmation)
-        assertEquals(5, state.pendingConfirmation!!.timeout)
-    }
-
-    @Ignore("Confirmation dialogs are now handled by tool executor, not event parsing")
-    @Test
-    fun testConfirmationImpactLevels() = runTest {
-        val impactLevels = listOf("low", "medium", "high", "critical")
-        
-        for ((index, impact) in impactLevels.withIndex()) {
-            val toolCallId = "confirm-$index"
-            
-            viewModel.handleAgentEvent(ToolCallStartEvent(toolCallId, "user_confirmation"))
-            
-            val args = """{"action": "Test action", "impact": "$impact"}"""
-            
-            viewModel.handleAgentEvent(ToolCallArgsEvent(toolCallId, args))
-            viewModel.handleAgentEvent(ToolCallEndEvent(toolCallId))
-
-            // Verify impact level is correctly parsed
-            val state = viewModel.state.value
-            assertNotNull(state.pendingConfirmation)
-            assertEquals(impact, state.pendingConfirmation!!.impact)
-            
-            // Clear for next test
-            viewModel.confirmAction()
-        }
-    }
-
-    @Ignore("Confirmation dialogs are now handled by tool executor, not event parsing")
-    @Test
-    fun testConfirmationDetailsHandling() = runTest {
-        // Test with complex details object
-        viewModel.handleAgentEvent(ToolCallStartEvent("confirm-123", "user_confirmation"))
-        
-        val argsWithDetails = """
-            {
-                "action": "Database operation",
-                "impact": "high",
-                "details": {
-                    "database": "production",
-                    "table": "users",
-                    "operation": "truncate",
-                    "affected_rows": "1000"
-                }
-            }
-        """.trimIndent()
-        
-        viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-123", argsWithDetails))
-        viewModel.handleAgentEvent(ToolCallEndEvent("confirm-123"))
-
-        // Verify details are correctly parsed
-        val state = viewModel.state.value
-        assertNotNull(state.pendingConfirmation)
-        
-        val details = state.pendingConfirmation!!.details
-        assertEquals("production", details["database"])
-        assertEquals("users", details["table"])
-        assertEquals("truncate", details["operation"])
-        assertEquals("1000", details["affected_rows"])
-    }
 
     @Test
     fun testNonConfirmationToolsIgnored() = runTest {
@@ -282,68 +103,6 @@ class ChatViewModelToolConfirmationTest {
         assertNull(state.pendingConfirmation, "Regular tools should not show confirmation dialog")
     }
 
-    @Ignore("Confirmation dialogs are now handled by tool executor, not event parsing")
-    @Test
-    fun testConfirmationStateConsistency() = runTest {
-        // Test that confirmation state is consistent across multiple operations
-        
-        // Set up initial confirmation
-        setupConfirmationDialog()
-        val initialConfirmation = viewModel.state.value.pendingConfirmation!!
-        
-        // Simulate some other events that shouldn't affect confirmation state
-        viewModel.handleAgentEvent(TextMessageStartEvent("msg-1"))
-        viewModel.handleAgentEvent(TextMessageContentEvent("msg-1", "Some text"))
-        viewModel.handleAgentEvent(StepStartedEvent("processing"))
-        
-        // Verify confirmation is still there and unchanged
-        val state = viewModel.state.value
-        assertNotNull(state.pendingConfirmation)
-        assertEquals(initialConfirmation.toolCallId, state.pendingConfirmation!!.toolCallId)
-        assertEquals(initialConfirmation.action, state.pendingConfirmation!!.action)
-        assertEquals(initialConfirmation.impact, state.pendingConfirmation!!.impact)
-    }
 
-    @Ignore("Confirmation dialogs are now handled by tool executor, not event parsing")
-    @Test
-    fun testConfirmationDialogEdgeCases() = runTest {
-        // Test with empty action (should still work)
-        viewModel.handleAgentEvent(ToolCallStartEvent("confirm-1", "user_confirmation"))
-        viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-1", """{"action": ""}"""))
-        viewModel.handleAgentEvent(ToolCallEndEvent("confirm-1"))
 
-        val state1 = viewModel.state.value
-        assertNotNull(state1.pendingConfirmation)
-        assertEquals("", state1.pendingConfirmation!!.action)
-
-        // Clear and test with missing action
-        viewModel.confirmAction()
-        
-        viewModel.handleAgentEvent(ToolCallStartEvent("confirm-2", "user_confirmation"))
-        viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-2", """{"impact": "high"}"""))
-        viewModel.handleAgentEvent(ToolCallEndEvent("confirm-2"))
-
-        val state2 = viewModel.state.value
-        assertNotNull(state2.pendingConfirmation)
-        assertEquals("Unknown action", state2.pendingConfirmation!!.action)
-    }
-
-    /**
-     * Helper method to set up a basic confirmation dialog for testing.
-     */
-    private fun setupConfirmationDialog() {
-        viewModel.handleAgentEvent(ToolCallStartEvent("confirm-test", "user_confirmation"))
-        
-        val confirmationArgs = """
-            {
-                "action": "Test action",
-                "impact": "medium",
-                "details": {"test": "value"},
-                "timeout_seconds": 30
-            }
-        """.trimIndent()
-        
-        viewModel.handleAgentEvent(ToolCallArgsEvent("confirm-test", confirmationArgs))
-        viewModel.handleAgentEvent(ToolCallEndEvent("confirm-test"))
-    }
 }

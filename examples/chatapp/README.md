@@ -24,7 +24,7 @@ The client follows a clean architecture pattern:
 
 ### Prerequisites
 
-- JDK 11 or higher (JDK 17 recommended)
+- JDK 11 or higher (JDK 21 recommended)
 - Android Studio or IntelliJ IDEA with Compose Multiplatform plugin
 - Xcode 14+ (for iOS development)
 - Kotlin 2.1.21 or higher

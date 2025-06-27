@@ -17,7 +17,6 @@ class BuiltinToolsIntegrationTest {
         var mockLatitude = 37.7749
         var mockLongitude = -122.4194
         var mockAddress = "San Francisco, CA"
-
         override suspend fun getCurrentLocation(request: LocationRequest): LocationResponse {
             if (!shouldSucceed) {
                 return LocationResponse(
