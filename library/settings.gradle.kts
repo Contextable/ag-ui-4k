@@ -24,6 +24,3 @@ include(":agui4k-client")
 include(":agui4k-tools")
 include(":agui4k-agent-sdk")
 
-// Include example modules
-include(":tools")
-project(":tools").projectDir = file("../examples/tools")
