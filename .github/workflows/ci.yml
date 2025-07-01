@@ -42,7 +42,7 @@ jobs:
       if: success() || failure()
       with:
         name: Test Results (${{ matrix.os }})
-        path: '**/build/test-results/test/TEST-*.xml'
+        path: 'library/**/build/test-results/**/TEST-*.xml'
         reporter: java-junit
         
     - name: Upload build artifacts
@@ -51,6 +51,16 @@ jobs:
       with:
         name: build-artifacts
         path: library/build/libs/
+        
+    - name: Upload test reports
+      uses: actions/upload-artifact@v4
+      if: always() && matrix.os == 'ubuntu-latest'
+      with:
+        name: test-reports-${{ matrix.os }}
+        path: |
+          library/**/build/reports/tests/
+          library/**/build/test-results/
+        retention-days: 5
 
   lint:
     runs-on: ubuntu-latest
