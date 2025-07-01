@@ -33,15 +33,13 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       
-    - name: Cache Gradle packages
-      uses: actions/cache@v4
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
       with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+        gradle-version: wrapper
+        
+    - name: Validate Gradle wrapper
+      uses: gradle/actions/wrapper-validation@v4
           
     - name: Make gradlew executable
       run: chmod +x ./library/gradlew
@@ -49,7 +47,12 @@ jobs:
     - name: Generate documentation
       run: |
         cd library
-        ./gradlew dokkaHtmlMultiModule
+        # Ensure wrapper jar exists and is valid
+        if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+          echo "Gradle wrapper jar missing, regenerating..."
+          gradle wrapper --gradle-version=8.14.2
+        fi
+        ./gradlew dokkaHtmlMultiModule --no-daemon --stacktrace
         
     - name: Upload documentation artifacts
       uses: actions/upload-artifact@v4
