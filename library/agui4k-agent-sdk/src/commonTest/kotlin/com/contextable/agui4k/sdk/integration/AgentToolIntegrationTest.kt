@@ -184,7 +184,6 @@ class AgentToolIntegrationTest {
     private class ResponseIterator(private val responses: List<String>) {
         private var index = 0
         
-        @Synchronized
         fun next(): String {
             return if (index < responses.size) {
                 responses[index++]

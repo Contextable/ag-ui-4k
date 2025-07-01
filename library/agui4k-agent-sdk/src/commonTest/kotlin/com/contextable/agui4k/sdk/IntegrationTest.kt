@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlin.test.*
 
 /**
@@ -240,7 +241,7 @@ class IntegrationTest {
                 // Find last user message and simulate assistant response
                 val lastUserMessage = input.messages.lastOrNull { it is UserMessage }
                 if (lastUserMessage != null) {
-                    val messageId = "msg_${System.currentTimeMillis()}_${++messageCounter}"
+                    val messageId = "msg_${Clock.System.now().toEpochMilliseconds()}_${++messageCounter}"
                     emit(TextMessageStartEvent(messageId = messageId))
                     emit(TextMessageContentEvent(
                         messageId = messageId,

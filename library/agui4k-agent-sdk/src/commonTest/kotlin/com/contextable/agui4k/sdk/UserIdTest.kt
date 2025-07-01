@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlin.test.*
 
 class UserIdTest {
@@ -163,7 +164,7 @@ class UserIdTest {
                 emit(RunStartedEvent(threadId = input.threadId, runId = input.runId))
                 
                 // Simulate assistant response
-                val messageId = "msg_${System.currentTimeMillis()}"
+                val messageId = "msg_${Clock.System.now().toEpochMilliseconds()}"
                 emit(TextMessageStartEvent(messageId = messageId))
                 emit(TextMessageContentEvent(messageId = messageId, delta = "Test response"))
                 emit(TextMessageEndEvent(messageId = messageId))

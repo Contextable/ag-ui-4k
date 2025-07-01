@@ -28,6 +28,8 @@ import com.contextable.agui4k.core.types.*
 import com.contextable.agui4k.sdk.*
 import com.contextable.agui4k.tools.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.*
 import kotlin.test.*
 
@@ -151,9 +153,9 @@ class AdvancedIntegrationTest {
 
     // Tool that simulates API calls with rate limiting
     class MockApiTool : ToolExecutor {
-        @Volatile
         private var callCount = 0
         private val maxCalls = 3
+        private val callCountMutex = Mutex()
 
         override val tool = Tool(
             name = "api_call",
@@ -180,7 +182,7 @@ class AdvancedIntegrationTest {
         )
 
         override suspend fun execute(context: ToolExecutionContext): ToolExecutionResult {
-            synchronized(this) { callCount++ }
+            callCountMutex.withLock { callCount++ }
             
             if (callCount > maxCalls) {
                 return ToolExecutionResult.failure("Rate limit exceeded. Maximum $maxCalls calls allowed.")
@@ -206,9 +208,10 @@ class AdvancedIntegrationTest {
             )
         }
 
-        @Synchronized
-        fun resetCallCount() {
-            callCount = 0
+        suspend fun resetCallCount() {
+            callCountMutex.withLock {
+                callCount = 0
+            }
         }
 
         override fun getMaxExecutionTimeMs(): Long = 10000L

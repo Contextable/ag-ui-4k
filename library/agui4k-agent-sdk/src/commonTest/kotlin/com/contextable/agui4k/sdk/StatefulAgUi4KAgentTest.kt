@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.datetime.Clock
 import kotlin.test.*
 
 class StatefulAgUi4KAgentTest {
@@ -223,7 +224,7 @@ class StatefulAgUi4KAgentTest {
                 val lastUserMessage = input.messages.lastOrNull { it is UserMessage }
                 if (lastUserMessage != null) {
                     // Emit assistant response
-                    val messageId = "msg_${System.currentTimeMillis()}"
+                    val messageId = "msg_${Clock.System.now().toEpochMilliseconds()}"
                     emit(TextMessageStartEvent(messageId = messageId))
                     emit(TextMessageContentEvent(
                         messageId = messageId,
