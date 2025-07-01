@@ -1,107 +1,415 @@
-## Naming Conventions
+# AG-UI-4K Overview
 
-You'll notice classes like `AbstractAgent` and fields like `agentId` in the codebase. These names come from the AG-UI protocol specification. Despite the naming, remember that ag-ui-4k implements **clients** that connect to agents, not the agents themselves.
+## Table of Contents
 
-- `AbstractAgent`: Base class for client implementations
-- `HttpAgent`: HTTP client implementation  
-- `agentId`: Identifier for the client instance
-- `runAgent()`: Method to connect to an agent
+1. [Introduction](#introduction)
+2. [Architecture Overview](#architecture-overview)
+3. [API Reference](#api-reference)
+   - [Core Module](#core-module)
+   - [Client Module](#client-module)
+   - [Tools Module](#tools-module)
+   - [Agent SDK Module](#agent-sdk-module)
 
-These names are retained for consistency with the AG-UI protocol.# ag-ui-4k Overview
+## Introduction
 
-## What is ag-ui-4k?
+AG-UI-4K is a Kotlin Multiplatform client library for connecting to AI agents that implement the [Agent User Interaction Protocol (AG-UI)](https://docs.ag-ui.com/). The library provides transport mechanisms, state management, and tool integration for communication between Kotlin applications and AI agents across Android, iOS, and JVM platforms.
 
-ag-ui-4k is a **client library** for Kotlin Multiplatform that enables applications to connect to and communicate with AI agents that implement the Agent User Interaction Protocol (AG-UI).
+This documentation covers:
+- **Core implementation**: Protocol types, events, and messages
+- **Client infrastructure**: Transport mechanisms and state management
+- **Tool integration**: Extensible tool execution framework
+- **High-level SDK**: Orchestration layers for agent interaction
 
-## What ag-ui-4k Does
+## Architecture Overview
 
-- **Connects to AG-UI Agents**: Establishes connections to remote AI agents via HTTP/SSE
-- **Handles Event Streams**: Processes real-time event streams from agents
-- **Manages Conversations**: Tracks message history between users and agents
-- **Provides Tools**: Allows agents to request actions through tool calls
-- **Synchronizes State**: Maintains state synchronization between client and agent
+AG-UI-4K follows the design patterns of the [TypeScript SDK](https://docs.ag-ui.com/sdk/js/core/overview) while using Kotlin's multiplatform capabilities and coroutine-based concurrency.
 
-## What ag-ui-4k Does NOT Do
-
-- **Does NOT implement agents**: This is a client library only
-- **Does NOT provide AI capabilities**: It connects to existing AI agents
-- **Does NOT host agents**: It's purely a client-side connection library
-
-## Architecture
+### Module Structure
 
 ```
-┌─────────────────┐         ┌─────────────────┐
-│   Your App      │         │   AI Agent      │
-│                 │         │   (Remote)      │
-│  ┌───────────┐  │  HTTP   │                 │
-│  │ ag-ui-4k  │──┼─────────┤► AG-UI Protocol│
-│  │  Client   │  │   SSE   │   Endpoint      │
-│  └───────────┘  │         │                 │
-└─────────────────┘         └─────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                          │
+├─────────────────────────────────────────────────────────────┤
+│                   agui4k-agent-sdk                           │
+│  ┌─────────────┐  ┌───────────────────┐  ┌──────────────┐  │
+│  │ AgUi4KAgent │  │StatefulAgUi4KAgent│  │   Builders   │  │
+│  └─────────────┘  └───────────────────┘  └──────────────┘  │
+├─────────────────────────────────────────────────────────────┤
+│        agui4k-client              │      agui4k-tools        │
+│  ┌────────────┐  ┌─────────────┐ │ ┌──────────────────────┐ │
+│  │ HttpAgent  │  │AbstractAgent│ │ │    ToolExecutor      │ │
+│  └────────────┘  └─────────────┘ │ └──────────────────────┘ │
+│  ┌────────────┐  ┌─────────────┐ │ ┌──────────────────────┐ │
+│  │EventVerifier│ │DefaultApply │ │ │    ToolRegistry      │ │
+│  │            │  │   Events    │ │ └──────────────────────┘ │
+│  └────────────┘  └─────────────┘ │ ┌──────────────────────┐ │
+│  ┌────────────┐                   │ │ ToolExecutionManager │ │
+│  │ SseParser  │                   │ └──────────────────────┘ │
+│  └────────────┘                   │                          │
+├─────────────────────────────────────────────────────────────┤
+│                    agui4k-core                               │
+│        (Types, Events, Messages, State)                      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Use Cases
+### Alignment with TypeScript SDK
 
-1. **Chat Applications**: Connect your chat UI to AI agents
-2. **Virtual Assistants**: Build apps that interact with AI assistants
-3. **Automation Tools**: Create tools that leverage AI agents for tasks
-4. **Development Tools**: Build IDEs or tools that use AI for code assistance
+AG-UI-4K maintains conceptual parity with the TypeScript SDK:
 
-## Key Components
+| TypeScript Concept | Kotlin Implementation | Key Differences |
+|-------------------|----------------------|-----------------|
+| Observable streams | Kotlin Flows | Native coroutine integration |
+| Promise-based APIs | Suspend functions | Structured concurrency |
+| Event interfaces | Sealed classes | Compile-time exhaustiveness |
+| JSON handling | kotlinx.serialization | Type-safe, reflection-free |
+| Transport abstraction | HttpAgent | Platform-specific implementations |
 
-### HttpAgent
-The main client implementation that:
-- Connects to AG-UI agents via HTTP
-- Receives streaming responses via Server-Sent Events (SSE)
-- Handles connection lifecycle and error recovery
+## API Reference
 
-### Event System
-Processes various event types from agents:
-- **Text Messages**: Streaming text responses
-- **Tool Calls**: Agent requests for specific actions
-- **State Updates**: Synchronization of agent state
-- **Lifecycle Events**: Connection status and errors
+### Core Module
 
-### Message Management
-- Tracks conversation history
-- Supports multiple message types (user, assistant, system, tool)
-- Maintains message ordering and relationships
+The core module defines the types and protocols for AG-UI communication.
 
-## Getting Started
+#### Messages
+
+Messages represent the conversational elements between users and agents:
 
 ```kotlin
-// 1. Create a client
-val client = HttpAgent(HttpAgentConfig(
-    url = "https://your-agent.example.com/agent",
-    headers = mapOf("Authorization" to "Bearer token")
-))
+sealed class Message {
+    abstract val id: String
+    abstract val messageRole: Role
+    abstract val content: String?
+    abstract val name: String?
+}
 
-// 2. Send messages
-client.addMessage(UserMessage(
-    id = "1",
-    content = "Hello, AI agent!"
-))
+// Message implementations
+data class UserMessage(
+    override val id: String,
+    override val content: String,
+    override val name: String? = null
+) : Message()
 
-// 3. Connect and receive responses
-client.runAgent().collect { event ->
-    when (event) {
-        is TextMessageContentEvent -> print(event.delta)
-        // Handle other events...
+data class AssistantMessage(
+    override val id: String,
+    override val content: String? = null,
+    override val name: String? = null,
+    val toolCalls: List<ToolCall>? = null
+) : Message()
+
+data class ToolMessage(
+    override val id: String,
+    override val content: String,
+    val toolCallId: String,
+    override val name: String? = null
+) : Message()
+```
+
+#### Events
+
+Events represent protocol-level communications:
+
+```kotlin
+sealed class BaseEvent {
+    abstract val eventType: EventType
+    abstract val timestamp: Long?
+    abstract val rawEvent: JsonElement?
+}
+
+// Lifecycle events
+data class RunStartedEvent(
+    val threadId: String,
+    val runId: String,
+    override val timestamp: Long? = null,
+    override val rawEvent: JsonElement? = null
+) : BaseEvent()
+
+// Text streaming events
+data class TextMessageContentEvent(
+    val messageId: String,
+    val delta: String,
+    override val timestamp: Long? = null,
+    override val rawEvent: JsonElement? = null
+) : BaseEvent()
+
+// Tool execution events
+data class ToolCallStartEvent(
+    val toolCallId: String,
+    val toolCallName: String,
+    val parentMessageId: String? = null,
+    override val timestamp: Long? = null,
+    override val rawEvent: JsonElement? = null
+) : BaseEvent()
+```
+
+#### State Management
+
+State represents the agent's context:
+
+```kotlin
+typealias State = JsonElement
+
+data class RunAgentInput(
+    val threadId: String,
+    val runId: String,
+    val state: JsonElement = JsonObject(emptyMap()),
+    val messages: List<Message> = emptyList(),
+    val tools: List<Tool> = emptyList(),
+    val context: List<Context> = emptyList(),
+    val forwardedProps: JsonElement = JsonObject(emptyMap())
+)
+```
+
+### Client Module
+
+The client module provides infrastructure for connecting to AG-UI agents.
+
+#### AbstractAgent
+
+Base class for agent implementations:
+
+```kotlin
+abstract class AbstractAgent(config: AgentConfig = AgentConfig()) {
+    var agentId: String? = config.agentId
+    val description: String = config.description
+    val threadId: String = config.threadId ?: generateId()
+    
+    var messages: List<Message> = config.initialMessages
+        protected set
+    
+    var state: State = config.initialState
+        protected set
+    
+    // Core execution methods
+    suspend fun runAgent(parameters: RunAgentParameters? = null)
+    fun runAgentObservable(input: RunAgentInput): Flow<BaseEvent>
+    
+    // Lifecycle management
+    open fun abortRun()
+    open fun dispose()
+    
+    // Extension points
+    protected abstract fun run(input: RunAgentInput): Flow<BaseEvent>
+    protected open fun apply(input: RunAgentInput, events: Flow<BaseEvent>): Flow<AgentState>
+    protected open fun onError(error: Throwable)
+    protected open fun onFinalize()
+}
+```
+
+#### HttpAgent
+
+HTTP transport implementation with Server-Sent Events:
+
+```kotlin
+class HttpAgent(
+    private val config: HttpAgentConfig,
+    private val httpClient: HttpClient? = null
+) : AbstractAgent(config) {
+    
+    override fun run(input: RunAgentInput): Flow<BaseEvent> = channelFlow {
+        client.sse(
+            urlString = config.url,
+            request = {
+                method = HttpMethod.Post
+                config.headers.forEach { (key, value) ->
+                    header(key, value)
+                }
+                contentType(ContentType.Application.Json)
+                accept(ContentType.Text.EventStream)
+                setBody(input)
+            }
+        ) {
+            sseParser.parseFlow(incoming)
+                .collect { event -> send(event) }
+        }
     }
 }
 ```
 
-## Platform Support
+#### State Synchronization
 
-- ✅ **Android**: Full support with Ktor Android engine
-- ✅ **iOS**: Full support with Ktor Darwin engine  
-- ✅ **JVM**: Full support with Ktor Java engine
-- 🚧 **JS/Browser**: Coming soon
-- 🚧 **Native Desktop**: Coming soon
+The `defaultApplyEvents` function manages state updates with JSON Patch support:
 
-## Technology Stack
+```kotlin
+fun defaultApplyEvents(
+    input: RunAgentInput,
+    events: Flow<BaseEvent>,
+    stateHandler: StateChangeHandler? = null
+): Flow<AgentState> {
+    // Manages message accumulation
+    // Applies state snapshots and deltas
+    // Handles predictive state updates
+    // Coordinates tool call assembly
+}
+```
 
-- **Kotlin 2.1.21**: With K2 compiler for optimal performance
-- **Ktor 3.1.3**: Modern, coroutine-based HTTP client
-- **kotlinx.serialization 1.8.1**: Fast, reflection-free JSON handling
-- **Coroutines & Flow**: Efficient async and streaming support
+### Tools Module
+
+The tools module provides a framework for extending agent capabilities.
+
+#### Tool Definition and Execution
+
+```kotlin
+interface ToolExecutor {
+    val tool: Tool
+    suspend fun execute(context: ToolExecutionContext): ToolExecutionResult
+    fun validate(toolCall: ToolCall): ToolValidationResult
+    fun canExecute(toolCall: ToolCall): Boolean
+    fun getMaxExecutionTimeMs(): Long? = null
+}
+
+abstract class AbstractToolExecutor(
+    override val tool: Tool
+) : ToolExecutor {
+    override suspend fun execute(context: ToolExecutionContext): ToolExecutionResult {
+        val validation = validate(context.toolCall)
+        if (!validation.isValid) {
+            return ToolExecutionResult.failure(
+                message = "Validation failed: ${validation.errors.joinToString(", ")}"
+            )
+        }
+        return executeInternal(context)
+    }
+    
+    protected abstract suspend fun executeInternal(
+        context: ToolExecutionContext
+    ): ToolExecutionResult
+}
+```
+
+#### Tool Registry
+
+Manages tool discovery and execution:
+
+```kotlin
+interface ToolRegistry {
+    fun registerTool(executor: ToolExecutor)
+    fun unregisterTool(toolName: String): Boolean
+    fun getToolExecutor(toolName: String): ToolExecutor?
+    fun getAllTools(): List<Tool>
+    suspend fun executeTool(context: ToolExecutionContext): ToolExecutionResult
+    fun getToolStats(toolName: String): ToolExecutionStats?
+}
+
+// Builder pattern for configuration
+fun toolRegistry(vararg executors: ToolExecutor): ToolRegistry {
+    return ToolRegistryBuilder().addTools(*executors).build()
+}
+```
+
+#### Tool Execution Manager
+
+Orchestrates tool execution lifecycle:
+
+```kotlin
+class ToolExecutionManager(
+    private val toolRegistry: ToolRegistry,
+    private val responseHandler: ToolResponseHandler
+) {
+    fun processEventStream(
+        events: Flow<BaseEvent>,
+        threadId: String?,
+        runId: String?
+    ): Flow<BaseEvent> = flow {
+        // Monitors tool call events
+        // Assembles streaming arguments
+        // Executes tools via registry
+        // Sends responses back to agent
+    }
+}
+```
+
+### Agent SDK Module
+
+The SDK module provides high-level abstractions for agent patterns.
+
+#### AgUi4KAgent (Stateless)
+
+For agents that manage their own state:
+
+```kotlin
+class AgUi4KAgent(
+    url: String,
+    configure: AgentConfig.() -> Unit = {}
+) {
+    suspend fun sendMessage(
+        content: String,
+        tools: List<Tool> = emptyList()
+    ): Flow<State> {
+        // Creates user message
+        // Runs agent with message
+        // Returns state updates
+    }
+    
+    fun runWithInput(input: RunAgentInput): Flow<BaseEvent> {
+        // Direct execution with custom input
+    }
+}
+```
+
+#### StatefulAgUi4KAgent
+
+Maintains conversation history and state locally:
+
+```kotlin
+class StatefulAgUi4KAgent(
+    url: String,
+    configure: StatefulAgentConfig.() -> Unit = {}
+) : AgUi4KAgent(url, configure) {
+    
+    private val conversationHistory = mutableListOf<Message>()
+    private var currentState: State = initialState
+    
+    suspend fun chat(message: String): Flow<State> {
+        // Adds message to history
+        // Includes full context in request
+        // Updates local state
+        // Returns incremental updates
+    }
+    
+    fun clearHistory() {
+        conversationHistory.clear()
+        currentState = initialState
+    }
+    
+    fun getHistory(): List<Message> = conversationHistory.toList()
+}
+```
+
+#### Builder Functions
+
+Convenience builders for common configurations:
+
+```kotlin
+// Bearer token authentication
+val agent = agentWithBearer(
+    url = "https://api.example.com/agent",
+    token = "your-token-here"
+)
+
+// Agent with tool support
+val toolAgent = agentWithTools(
+    url = "https://api.example.com/agent",
+    toolRegistry = toolRegistry {
+        addTool(CalculatorToolExecutor())
+        addTool(WeatherToolExecutor())
+    }
+) {
+    bearerToken = "your-token"
+    systemPrompt = "You are a helpful assistant"
+}
+
+// Stateful chat agent
+val chatAgent = chatAgent(
+    url = "https://api.example.com/agent",
+    systemPrompt = "You are a conversational AI assistant"
+) {
+    bearerToken = "your-token"
+    initialState = buildJsonObject {
+        put("userName", "Developer")
+        put("preferences", buildJsonObject {
+            put("language", "en")
+            put("timezone", "UTC")
+        })
+    }
+}
+```

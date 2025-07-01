@@ -189,9 +189,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Inspired by the [AG-UI Protocol](https://github.com/ag-ui/protocol)
 - Built with [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html)
 - Powered by [Ktor](https://ktor.io/) for networking
-
-## Support
-
-- 📧 Email: support@contextable.com
-- 💬 Discord: [Join our community](https://discord.gg/agui4k)
-- 🐛 Issues: [GitHub Issues](https://github.com/contextable/agui4k/issues)

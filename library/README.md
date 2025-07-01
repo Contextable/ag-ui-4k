@@ -59,4 +59,5 @@ When developing:
 
 - `com.contextable.agui4k.core` - Core protocol types and base abstractions
 - `com.contextable.agui4k.client` - Client implementations (HttpAgent, etc.)
-- `com.contextable.agui4k.platform` - Platform-specific code
+- `com.contextable.agui4k.tools` - Tool execution framework
+- `com.contextable.agui4k.agent-sdk` - High-level client SDK

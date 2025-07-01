@@ -143,7 +143,7 @@ fun `should handle event when condition is met`() {
 ## Platform-Specific Guidelines
 
 ### Android
-- Minimum SDK: 21
+- Minimum SDK: 26
 - Target latest stable Android version
 - Test on both emulators and real devices
 
