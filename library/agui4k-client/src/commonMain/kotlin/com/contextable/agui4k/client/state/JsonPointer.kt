@@ -26,8 +26,27 @@ package com.contextable.agui4k.client.state
 import kotlinx.serialization.json.*
 
 /**
- * JSON Pointer utilities for path evaluation.
- * Implements RFC 6901 JSON Pointer specification.
+ * JSON Pointer utilities implementing RFC 6901 specification.
+ * 
+ * JSON Pointer is a string syntax for identifying a specific value within a JSON document.
+ * It provides a standardized way to navigate nested JSON structures using path-like syntax.
+ * 
+ * Features:
+ * - RFC 6901 compliant implementation
+ * - Proper handling of escape sequences (~0 for ~, ~1 for /)
+ * - Support for array indices and object properties
+ * - Path creation and segment encoding utilities
+ * - Null-safe navigation with graceful failure handling
+ * 
+ * Path Format:
+ * - Empty string "" or "/" refers to the root document
+ * - "/foo" refers to the "foo" property of the root object
+ * - "/foo/bar" refers to the "bar" property of the "foo" object
+ * - "/foo/0" refers to the first element of the "foo" array
+ * - "/foo/bar~1baz" refers to the "bar/baz" property (/ is escaped as ~1)
+ * - "/foo/bar~0baz" refers to the "bar~baz" property (~ is escaped as ~0)
+ * 
+ * @see <a href="https://tools.ietf.org/html/rfc6901">RFC 6901 - JSON Pointer</a>
  */
 object JsonPointer {
 
@@ -74,6 +93,18 @@ object JsonPointer {
 
     /**
      * Encodes a string for use as a JSON Pointer segment.
+     * 
+     * This function applies the required escape sequences for JSON Pointer:
+     * - '~' becomes '~0'
+     * - '/' becomes '~1'
+     * 
+     * These escapes are necessary because both characters have special meaning
+     * in JSON Pointer syntax.
+     * 
+     * @param segment The string to encode
+     * @return The encoded string safe for use in JSON Pointer paths
+     * 
+     * @see decodeSegment
      */
     fun encodeSegment(segment: String): String {
         return segment
@@ -82,7 +113,21 @@ object JsonPointer {
     }
 
     /**
-     * Creates a JSON Pointer path from segments.
+     * Creates a JSON Pointer path from multiple segments.
+     * 
+     * This is a convenience function that properly encodes each segment
+     * and joins them with '/' separators to create a valid JSON Pointer path.
+     * 
+     * @param segments The path segments to combine (will be encoded automatically)
+     * @return A properly formatted JSON Pointer path
+     * 
+     * Example:
+     * ```kotlin
+     * createPath("users", "0", "name") // Returns "/users/0/name"
+     * createPath("foo/bar", "baz~test") // Returns "/foo~1bar/baz~0test"
+     * ```
+     * 
+     * @see encodeSegment
      */
     fun createPath(vararg segments: String): String {
         return "/" + segments.joinToString("/") { encodeSegment(it) }

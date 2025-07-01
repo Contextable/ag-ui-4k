@@ -34,6 +34,11 @@ private val logger = KotlinLogging.logger {}
 /**
  * Manages client-side state with JSON Patch support.
  * Uses kotlin-json-patch (io.github.reidsync:kotlin-json-patch).
+ * Provides reactive state management with StateFlow and handles both
+ * full state snapshots and incremental JSON Patch deltas.
+ * 
+ * @property handler Optional callback handler for state change notifications
+ * @param initialState The initial state as a JsonElement (defaults to empty JsonObject)
  */
 class StateManager(
     private val handler: StateChangeHandler? = null,
@@ -44,6 +49,10 @@ class StateManager(
 
     /**
      * Processes AG-UI events and updates state.
+     * Handles StateSnapshotEvent and StateDeltaEvent to maintain current state.
+     * Other event types are ignored as they don't affect state.
+     * 
+     * @param event The AG-UI event to process
      */
     suspend fun processEvent(event: BaseEvent) {
         when (event) {
@@ -78,6 +87,9 @@ class StateManager(
      * Gets a value by JSON Pointer path.
      * Note: The 'kotlin-json-patch' library does not provide a public
      * implementation of JSON Pointer, so we've implemented one.
+     * 
+     * @param path JSON Pointer path (e.g., "/user/name" or "/items/0")
+     * @return JsonElement? the value at the specified path, or null if not found or on error
      */
     fun getValue(path: String): JsonElement? {
         return try {

@@ -67,7 +67,16 @@ enum class Role {
 }
 
 /**
- * Represents a message from a developer.
+ * Represents a message from a developer/system administrator.
+ * 
+ * Developer messages are used for system-level instructions, configuration,
+ * and administrative communication that differs from regular system prompts.
+ * They typically contain meta-instructions about how the agent should behave
+ * or technical configuration details.
+ * 
+ * @param id Unique identifier for this message
+ * @param content The developer's message content
+ * @param name Optional name/identifier for the developer or system
  */
 @Serializable
 @SerialName("developer")
@@ -81,7 +90,16 @@ data class DeveloperMessage(
 }
 
 /**
- * Represents a system message.
+ * Represents a system message containing instructions or context.
+ * 
+ * System messages provide high-level instructions, personality traits,
+ * behavioral guidelines, and context that shape how the agent responds.
+ * They are typically set at the beginning of a conversation and remain
+ * active throughout the interaction.
+ * 
+ * @param id Unique identifier for this message
+ * @param content The system instructions or context (may be null for certain configurations)
+ * @param name Optional name/identifier for the system or instruction set
  */
 @Serializable
 @SerialName("system")
@@ -95,7 +113,20 @@ data class SystemMessage(
 }
 
 /**
- * Represents a message from an assistant.
+ * Represents a message from the AI assistant.
+ * 
+ * Assistant messages contain the agent's responses, which can include:
+ * - Text content (responses, explanations, questions)
+ * - Tool calls (requests to execute external functions)
+ * - Mixed content combining text and tool calls
+ * 
+ * The message may be built incrementally through streaming events,
+ * starting with basic structure and adding content/tool calls over time.
+ * 
+ * @param id Unique identifier for this message
+ * @param content The assistant's text content (may be null if only tool calls)
+ * @param name Optional name/identifier for the assistant
+ * @param toolCalls Optional list of tool calls made by the assistant
  */
 @Serializable
 @SerialName("assistant")
@@ -110,7 +141,15 @@ data class AssistantMessage(
 }
 
 /**
- * Represents a message from a user.
+ * Represents a message from the user/human.
+ * 
+ * User messages contain input from the person interacting with the agent.
+ * This includes questions, requests, instructions, and any other human
+ * communication that the agent should respond to.
+ * 
+ * @param id Unique identifier for this message
+ * @param content The user's message content
+ * @param name Optional name/identifier for the user
  */
 @Serializable
 @SerialName("user")
@@ -124,7 +163,17 @@ data class UserMessage(
 }
 
 /**
- * Represents a message from a tool.
+ * Represents a message containing the result of a tool execution.
+ * 
+ * Tool messages are created after an assistant requests a tool call
+ * and the tool has been executed. They contain the results, output,
+ * or response from the tool execution, which the assistant can then
+ * use to continue the conversation or complete its task.
+ * 
+ * @param id Unique identifier for this message
+ * @param content The tool's output or result as text
+ * @param toolCallId The ID of the tool call this message responds to
+ * @param name Optional name of the tool that generated this message
  */
 @Serializable
 @SerialName("tool")

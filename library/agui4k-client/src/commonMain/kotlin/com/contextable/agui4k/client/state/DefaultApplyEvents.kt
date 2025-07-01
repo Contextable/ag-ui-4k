@@ -33,7 +33,16 @@ import mu.KotlinLogging
 private val logger = KotlinLogging.logger {}
 
 /**
- * Data class for predictive state configuration.
+ * Configuration for predictive state updates during tool execution.
+ * 
+ * This class defines how to update the agent state based on incoming tool arguments
+ * before the tool execution is complete. This allows for optimistic UI updates
+ * and improved user experience.
+ * 
+ * @param state_key The JSON pointer path in the state to update
+ * @param tool The name of the tool whose arguments should trigger state updates
+ * @param tool_argument Optional specific argument name to extract from tool arguments.
+ *                      If null, the entire arguments object is used.
  */
 data class PredictStateValue(
     val state_key: String,
@@ -42,8 +51,33 @@ data class PredictStateValue(
 )
 
 /**
- * Default implementation of event application logic with JSON Patch support.
- * Updates agent state based on received events.
+ * Default implementation of event application logic with comprehensive event handling.
+ * 
+ * This function transforms a stream of AG-UI protocol events into a stream of agent states.
+ * It handles all standard event types and maintains consistency between messages and state.
+ * 
+ * Key features:
+ * - Handles all AG-UI protocol events (text messages, tool calls, state changes)
+ * - Applies JSON Patch operations for state deltas
+ * - Supports predictive state updates during tool execution
+ * - Maintains message history and tool call tracking
+ * - Provides error handling and recovery for state operations
+ * - Integrates with custom state change handlers
+ * 
+ * Event Processing:
+ * - Text message events: Build and update assistant messages incrementally
+ * - Tool call events: Track tool calls and their arguments as they stream in
+ * - State events: Apply snapshots and deltas using RFC 6902 JSON Patch
+ * - Custom events: Handle special events like predictive state configuration
+ * 
+ * @param input The initial agent input containing messages, state, and configuration
+ * @param events Stream of events from the agent to process
+ * @param stateHandler Optional handler for state change notifications and error handling
+ * @return Flow of agent states as events are processed
+ * 
+ * @see AgentState
+ * @see BaseEvent
+ * @see StateChangeHandler
  */
 fun defaultApplyEvents(
     input: RunAgentInput,

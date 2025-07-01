@@ -35,11 +35,20 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Tool response handler that sends responses back through the HTTP agent
+ *
+ * @param httpAgent The HTTP agent to send tool responses through
  */
 class ClientToolResponseHandler(
     private val httpAgent: HttpAgent
 ) : ToolResponseHandler {
 
+    /**
+     * Send a tool response back to the agent
+     *
+     * @param toolMessage The tool message containing the response
+     * @param threadId The thread ID for the conversation
+     * @param runId The run ID for the current execution
+     */
     override suspend fun sendToolResponse(
         toolMessage: ToolMessage,
         threadId: String?,

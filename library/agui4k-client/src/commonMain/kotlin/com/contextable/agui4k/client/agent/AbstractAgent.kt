@@ -71,6 +71,10 @@ abstract class AbstractAgent(
      * Main entry point to run the agent.
      * Consumes events internally for state management and returns when complete.
      * Matches TypeScript AbstractAgent.runAgent(): Promise<void>
+     * 
+     * @param parameters Optional parameters for the agent run including runId, tools, context, and forwarded properties
+     * @throws CancellationException if the agent run is cancelled
+     * @throws Exception if an unexpected error occurs during execution
      */
     suspend fun runAgent(parameters: RunAgentParameters? = null) {
         agentId = agentId ?: generateId()
@@ -161,6 +165,11 @@ abstract class AbstractAgent(
 
     /**
      * Convenience method to observe agent events with parameters instead of full input.
+     * Returns a Flow of events that can be observed/collected for real-time event processing.
+     * 
+     * @param parameters Optional parameters for the agent run including runId, tools, context, and forwarded properties
+     * @return Flow<BaseEvent> stream of events emitted during agent execution
+     * @see runAgentObservable(RunAgentInput) for the full input version
      */
     fun runAgentObservable(parameters: RunAgentParameters? = null): Flow<BaseEvent> {
         val input = prepareRunAgentInput(parameters)
@@ -169,6 +178,7 @@ abstract class AbstractAgent(
     
     /**
      * Cancels the current agent run.
+     * This method is safe to call multiple times and will only cancel if a run is in progress.
      */
     open fun abortRun() {
         logger.debug { "Aborting agent run" }
@@ -177,7 +187,12 @@ abstract class AbstractAgent(
     
     /**
      * Applies events to update agent state.
-     * Can be overridden for custom state management.
+     * Can be overridden for custom state management. The default implementation
+     * uses the defaultApplyEvents function to transform events into state updates.
+     * 
+     * @param input The original run input containing context and configuration
+     * @param events Flow of events to be processed into state updates
+     * @return Flow<AgentState> representing state changes over time
      */
     protected open fun apply(
         input: RunAgentInput,
@@ -188,6 +203,12 @@ abstract class AbstractAgent(
     
     /**
      * Processes state updates from the apply stage.
+     * Updates the agent's internal state (messages and state) based on the state changes.
+     * Can be overridden to customize how state updates are handled.
+     * 
+     * @param input The original run input containing context and configuration
+     * @param states Flow of state updates to be processed
+     * @return Flow<AgentState> the same flow of states, after applying side effects
      */
     protected open fun processApplyEvents(
         input: RunAgentInput,
@@ -211,6 +232,11 @@ abstract class AbstractAgent(
     
     /**
      * Prepares the input for running the agent.
+     * Converts RunAgentParameters into a complete RunAgentInput with all required fields.
+     * Generates a new runId if not provided in parameters.
+     * 
+     * @param parameters Optional parameters to configure the agent run
+     * @return RunAgentInput complete input object for agent execution
      */
     protected open fun prepareRunAgentInput(
         parameters: RunAgentParameters?
@@ -228,6 +254,10 @@ abstract class AbstractAgent(
     
     /**
      * Called when an error occurs during agent execution.
+     * Override this method to implement custom error handling logic.
+     * The default implementation logs the error.
+     * 
+     * @param error The throwable that caused the execution failure
      */
     protected open fun onError(error: Throwable) {
         // Default implementation logs the error
@@ -236,6 +266,9 @@ abstract class AbstractAgent(
     
     /**
      * Called when agent execution completes (success or failure).
+     * Override this method to implement cleanup logic that should run
+     * regardless of whether the execution succeeded or failed.
+     * The default implementation logs a debug message.
      */
     protected open fun onFinalize() {
         // Default implementation does nothing
@@ -244,7 +277,11 @@ abstract class AbstractAgent(
     
     /**
      * Creates a deep copy of this agent.
-     * Concrete implementations should override this method.
+     * Concrete implementations should override this method to provide
+     * proper cloning behavior with all configuration and state preserved.
+     * 
+     * @return AbstractAgent a new instance with the same configuration as this agent
+     * @throws NotImplementedError if not overridden by concrete implementations
      */
     open fun clone(): AbstractAgent {
         throw NotImplementedError("Clone must be implemented by concrete agent classes")
@@ -252,6 +289,8 @@ abstract class AbstractAgent(
     
     /**
      * Cleanup resources when agent is no longer needed.
+     * Cancels any running operations and cleans up the coroutine scope.
+     * Call this method when the agent will no longer be used to prevent resource leaks.
      */
     open fun dispose() {
         logger.debug { "Disposing agent" }
@@ -266,6 +305,15 @@ abstract class AbstractAgent(
 
 /**
  * Configuration for creating an agent.
+ * Base configuration class containing common agent settings such as ID, description,
+ * initial state, and debug options.
+ * 
+ * @property agentId Optional unique identifier for the agent
+ * @property description Human-readable description of the agent's purpose
+ * @property threadId Optional thread identifier for conversation continuity
+ * @property initialMessages List of messages to start the agent with
+ * @property initialState Initial state object for the agent
+ * @property debug Whether to enable debug logging
  */
 open class AgentConfig(
     open val agentId: String? = null,
@@ -279,6 +327,11 @@ open class AgentConfig(
 /**
  * HTTP-specific agent configuration extending AgentConfig.
  * Includes URL and HTTP headers for HTTP-based agent implementations.
+ * 
+ * @property url The HTTP endpoint URL for the agent
+ * @property headers Additional HTTP headers to send with requests
+ * @property requestTimeout Timeout for HTTP requests in milliseconds (default: 10 minutes)
+ * @property connectTimeout Timeout for establishing HTTP connections in milliseconds (default: 30 seconds)
  */
 class HttpAgentConfig(
     agentId: String? = null,
@@ -295,6 +348,12 @@ class HttpAgentConfig(
 
 /**
  * Parameters for running an agent.
+ * Optional parameters that can be provided when starting an agent run.
+ * 
+ * @property runId Optional unique identifier for this specific run
+ * @property tools Optional list of tools available to the agent
+ * @property context Optional list of context items for the agent
+ * @property forwardedProps Optional additional properties to forward to the agent
  */
 data class RunAgentParameters(
     val runId: String? = null,
@@ -305,6 +364,10 @@ data class RunAgentParameters(
 
 /**
  * Represents the transformed agent state.
+ * Contains the current state of the agent including messages and state data.
+ * 
+ * @property messages Optional list of messages in the current conversation
+ * @property state Optional state object containing agent-specific data
  */
 data class AgentState(
     val messages: List<Message>? = null,

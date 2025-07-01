@@ -56,6 +56,12 @@ class HttpAgent(
     
     /**
      * Implementation of abstract run method using HTTP/SSE transport.
+     * Makes an HTTP POST request to the configured URL and processes the SSE response stream.
+     * 
+     * @param input The complete input for the agent run including thread ID, run ID, tools, and context
+     * @return Flow<BaseEvent> stream of events received from the agent endpoint
+     * @throws CancellationException if the operation is cancelled
+     * @throws Exception for network or parsing errors
      */
     override fun run(input: RunAgentInput): Flow<BaseEvent> = channelFlow {
         try {
@@ -105,6 +111,10 @@ class HttpAgent(
     
     /**
      * Creates a clone of this agent with the same configuration.
+     * The cloned agent will have the same HTTP configuration and current state,
+     * but will maintain its own HTTP client lifecycle.
+     * 
+     * @return AbstractAgent a new HttpAgent instance with identical configuration
      */
     override fun clone(): AbstractAgent {
         return HttpAgent(
@@ -126,6 +136,8 @@ class HttpAgent(
     
     /**
      * Cleanup HTTP client resources only when explicitly closed, not after each run.
+     * The HTTP client is designed to be reusable across multiple agent runs,
+     * so this method does not close the client.
      */
     override fun onFinalize() {
         super.onFinalize()
@@ -134,6 +146,8 @@ class HttpAgent(
     
     /**
      * Override dispose to properly cleanup HTTP client resources.
+     * Closes the HTTP client if it was created internally (not provided externally).
+     * This ensures proper cleanup of network resources and connection pools.
      */
     override fun dispose() {
         // Close the HTTP client if we created it

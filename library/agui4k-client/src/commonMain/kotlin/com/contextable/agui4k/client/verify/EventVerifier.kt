@@ -31,12 +31,21 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Custom error class for AG-UI protocol violations.
+ * Thrown when events don't follow the proper AG-UI protocol state machine rules.
+ * 
+ * @param message Descriptive error message explaining the protocol violation
  */
 class AGUIError(message: String) : Exception(message)
 
 /**
  * Verifies that events follow the AG-UI protocol rules.
  * Implements a state machine to track valid event sequences.
+ * Ensures proper event ordering, validates message and tool call lifecycles,
+ * and prevents protocol violations like multiple RUN_STARTED events.
+ * 
+ * @param debug Whether to enable debug logging for event verification
+ * @return Flow<BaseEvent> the same event flow after validation
+ * @throws AGUIError when events violate the AG-UI protocol state machine
  */
 fun Flow<BaseEvent>.verifyEvents(debug: Boolean = false): Flow<BaseEvent> {
     // State tracking

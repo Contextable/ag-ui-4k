@@ -64,6 +64,10 @@ open class StatefulAgUi4KAgent(
 
     /**
      * Chat interface - delegates to sendMessage with thread management
+     *
+     * @param message The user message to send
+     * @param threadId The thread ID for conversation (defaults to "default")
+     * @return Flow of events from the agent
      */
     fun chat(
         message: String,
@@ -178,6 +182,11 @@ open class StatefulAgUi4KAgent(
     /**
      * Clear conversation history for a specific thread
      */
+    /**
+     * Clear conversation history for a specific thread
+     *
+     * @param threadId The thread ID to clear history for, or null to clear all threads
+     */
     fun clearHistory(threadId: String? = null) {
         if (threadId != null) {
             conversationHistory.remove(threadId)
@@ -189,6 +198,12 @@ open class StatefulAgUi4KAgent(
     /**
      * Get the current conversation history for a thread
      */
+    /**
+     * Get the current conversation history for a thread
+     *
+     * @param threadId The thread ID to get history for (defaults to "default")
+     * @return List of messages in the conversation history
+     */
     fun getHistory(threadId: String = "default"): List<Message> {
         return conversationHistory[threadId]?.toList() ?: emptyList()
     }
@@ -199,6 +214,9 @@ open class StatefulAgUi4KAgent(
  * Configuration for stateful agents
  */
 class StatefulAgUi4kAgentConfig : AgUi4kAgentConfig() {
+    /** Initial state for the agent */
     var initialState: JsonElement = JsonObject(emptyMap())
-    var maxHistoryLength: Int = 100  // 0 = unlimited
+    
+    /** Maximum conversation history length (0 = unlimited) */
+    var maxHistoryLength: Int = 100
 }

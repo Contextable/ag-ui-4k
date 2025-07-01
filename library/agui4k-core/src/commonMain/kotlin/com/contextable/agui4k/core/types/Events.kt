@@ -105,26 +105,81 @@ enum class EventType {
 }
 
 /**
- * Base interface for all events in the AG-UI protocol.
- *
+ * Base class for all events in the AG-UI protocol.
+ * 
+ * Events represent real-time notifications from agents about their execution state,
+ * message generation, tool calls, and state changes. All events follow a common
+ * structure with polymorphic serialization based on the "type" field.
+ * 
+ * Key Properties:
+ * - eventType: The specific type of event (used for pattern matching)
+ * - timestamp: Optional timestamp of when the event occurred
+ * - rawEvent: Optional raw JSON representation for debugging/logging
+ * 
+ * Event Categories:
+ * - Lifecycle Events: Run and step start/finish/error events
+ * - Text Message Events: Streaming text message generation
+ * - Tool Call Events: Tool invocation and argument streaming
+ * - State Management Events: State snapshots and incremental updates
+ * - Special Events: Raw and custom event types
+ * 
+ * Serialization:
+ * Uses @JsonClassDiscriminator("type") for polymorphic serialization where
+ * the "type" field determines which specific event class to deserialize to.
+ * 
+ * @see EventType
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @JsonClassDiscriminator("type")
 sealed class BaseEvent {
-    // Necessary to deal with Kotlinx polymorphic serialization; without this, there's a conflict.
-    // Note: This property is not serialized - the "type" field comes from @JsonClassDiscriminator
+    /**
+     * The type of this event.
+     * 
+     * This property is used for pattern matching and event handling logic.
+     * It is marked as @Transient in implementations because the actual "type"
+     * field in JSON comes from the @JsonClassDiscriminator annotation.
+     * 
+     * @see EventType
+     */
     abstract val eventType: EventType
-    // The type of timestamp is somewhat nebulous.  In the Typescript version of the protocol,
-    // it is an optional number which would be "Double?" in Kotlin.  But in the Python version,
-    // it is "int", which is closer to "Long?".  Going off of the generally accepted meaning of
-    // timestamp, we will therefore stick with "Long?".
+    /**
+     * Optional timestamp indicating when this event occurred.
+     * 
+     * The timestamp is represented as milliseconds since epoch (Unix timestamp).
+     * This field may be null if timing information is not available or relevant.
+     * 
+     * Note: The protocol specification varies between implementations regarding
+     * timestamp format, but Long (milliseconds) is used here for consistency
+     * with standard timestamp conventions.
+     */
     abstract val timestamp: Long?
+    /**
+     * Optional raw JSON representation of the original event.
+     * 
+     * This field preserves the original JSON structure of the event as received
+     * from the agent. It can be useful for debugging, logging, or handling
+     * protocol extensions that aren't yet supported by the typed event classes.
+     * 
+     * @see JsonElement
+     */
     abstract val rawEvent: JsonElement?
 }
 
 // ============== Lifecycle Events (5) ==============
 
+/**
+ * Event indicating that a new agent run has started.
+ * 
+ * This event is emitted when an agent begins processing a new run request.
+ * It provides the thread and run identifiers that will be used throughout
+ * the execution lifecycle.
+ * 
+ * @param threadId The identifier for the conversation thread
+ * @param runId The unique identifier for this specific run
+ * @param timestamp Optional timestamp when the run started
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("RUN_STARTED")
 data class RunStartedEvent(
@@ -137,6 +192,17 @@ data class RunStartedEvent(
     override val eventType: EventType = EventType.RUN_STARTED
 }
 
+/**
+ * Event indicating that an agent run has completed successfully.
+ * 
+ * This event is emitted when an agent has finished processing a run request
+ * and has generated all output. It signals the end of the execution lifecycle.
+ * 
+ * @param threadId The identifier for the conversation thread
+ * @param runId The unique identifier for the completed run
+ * @param timestamp Optional timestamp when the run finished
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("RUN_FINISHED")
 data class RunFinishedEvent(
@@ -149,6 +215,17 @@ data class RunFinishedEvent(
     override val eventType: EventType = EventType.RUN_FINISHED
 }
 
+/**
+ * Event indicating that an agent run has encountered an error.
+ * 
+ * This event is emitted when an agent run fails due to an unrecoverable error.
+ * It provides error details and optional error codes for debugging and handling.
+ * 
+ * @param message Human-readable error message describing what went wrong
+ * @param code Optional error code for programmatic error handling
+ * @param timestamp Optional timestamp when the error occurred
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("RUN_ERROR")
 data class RunErrorEvent(
@@ -161,6 +238,17 @@ data class RunErrorEvent(
     override val eventType: EventType = EventType.RUN_ERROR
 }
 
+/**
+ * Event indicating that a new execution step has started.
+ * 
+ * Steps represent discrete phases of agent execution, such as reasoning,
+ * tool calling, or response generation. This event marks the beginning
+ * of a named step in the agent's workflow.
+ * 
+ * @param stepName The name of the step that has started
+ * @param timestamp Optional timestamp when the step started
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("STEP_STARTED")
 data class StepStartedEvent(
@@ -172,6 +260,16 @@ data class StepStartedEvent(
     override val eventType: EventType = EventType.STEP_STARTED
 }
 
+/**
+ * Event indicating that an execution step has completed.
+ * 
+ * This event marks the end of a named step in the agent's workflow.
+ * It can be used to track progress and measure step execution times.
+ * 
+ * @param stepName The name of the step that has finished
+ * @param timestamp Optional timestamp when the step finished
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("STEP_FINISHED")
 data class StepFinishedEvent(
@@ -185,6 +283,17 @@ data class StepFinishedEvent(
 
 // ============== Text Message Events (3) ==============
 
+/**
+ * Event indicating the start of a streaming text message.
+ * 
+ * This event is emitted when an agent begins generating a text message response.
+ * It provides the message ID that will be used in subsequent content events
+ * to build the complete message incrementally.
+ * 
+ * @param messageId Unique identifier for the message being generated
+ * @param timestamp Optional timestamp when message generation started
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("TEXT_MESSAGE_START")
 data class TextMessageStartEvent(
@@ -198,6 +307,18 @@ data class TextMessageStartEvent(
     val role : String = "assistant"
 }
 
+/**
+ * Event containing incremental content for a streaming text message.
+ * 
+ * This event is emitted multiple times during message generation to provide
+ * chunks of text content. The delta field contains the new text to append
+ * to the message identified by messageId.
+ * 
+ * @param messageId Unique identifier for the message being updated
+ * @param delta The text content to append to the message (must not be empty)
+ * @param timestamp Optional timestamp when this content was generated
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("TEXT_MESSAGE_CONTENT")
 data class TextMessageContentEvent(
@@ -213,6 +334,16 @@ data class TextMessageContentEvent(
     }
 }
 
+/**
+ * Event indicating the completion of a streaming text message.
+ * 
+ * This event is emitted when an agent has finished generating a text message.
+ * No more content events will be sent for the message identified by messageId.
+ * 
+ * @param messageId Unique identifier for the completed message
+ * @param timestamp Optional timestamp when message generation completed
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("TEXT_MESSAGE_END")
 data class TextMessageEndEvent(
@@ -226,6 +357,19 @@ data class TextMessageEndEvent(
 
 // ============== Tool Call Events (3) ==============
 
+/**
+ * Event indicating the start of a tool call.
+ * 
+ * This event is emitted when an agent begins invoking a tool. It provides
+ * the tool call ID and name, along with an optional parent message ID
+ * that indicates which message contains this tool call.
+ * 
+ * @param toolCallId Unique identifier for this tool call
+ * @param toolCallName The name of the tool being called
+ * @param parentMessageId Optional ID of the message containing this tool call
+ * @param timestamp Optional timestamp when the tool call started
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("TOOL_CALL_START")
 data class ToolCallStartEvent(
@@ -239,6 +383,18 @@ data class ToolCallStartEvent(
     override val eventType: EventType = EventType.TOOL_CALL_START
 }
 
+/**
+ * Event containing incremental arguments for a streaming tool call.
+ * 
+ * This event is emitted multiple times during tool call generation to provide
+ * chunks of the JSON arguments string. The delta field contains additional
+ * argument text to append to the tool call identified by toolCallId.
+ * 
+ * @param toolCallId Unique identifier for the tool call being updated
+ * @param delta The argument text to append (may be partial JSON)
+ * @param timestamp Optional timestamp when this argument content was generated
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("TOOL_CALL_ARGS")
 data class ToolCallArgsEvent(
@@ -251,6 +407,18 @@ data class ToolCallArgsEvent(
     override val eventType: EventType = EventType.TOOL_CALL_ARGS
 }
 
+/**
+ * Event indicating the completion of a tool call's argument generation.
+ * 
+ * This event is emitted when an agent has finished generating the arguments
+ * for a tool call. The arguments should now be complete and valid JSON.
+ * This does not indicate that the tool has been executed, only that the
+ * agent has finished specifying how to call it.
+ * 
+ * @param toolCallId Unique identifier for the completed tool call
+ * @param timestamp Optional timestamp when argument generation completed
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("TOOL_CALL_END")
 data class ToolCallEndEvent(
@@ -264,6 +432,18 @@ data class ToolCallEndEvent(
 
 // ============== State Management Events (3) ==============
 
+/**
+ * Event containing a complete state snapshot.
+ * 
+ * This event provides a full replacement of the current agent state.
+ * It's typically used for initial state setup or after significant
+ * state changes that are easier to represent as a complete replacement
+ * rather than incremental updates.
+ * 
+ * @param snapshot The complete new state as a JSON element
+ * @param timestamp Optional timestamp when the snapshot was created
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("STATE_SNAPSHOT")
 data class StateSnapshotEvent(
@@ -275,6 +455,19 @@ data class StateSnapshotEvent(
     override val eventType: EventType = EventType.STATE_SNAPSHOT
 }
 
+/**
+ * Event containing incremental state changes as JSON Patch operations.
+ * 
+ * This event provides efficient state updates using RFC 6902 JSON Patch format.
+ * The delta field contains an array of patch operations (add, remove, replace, etc.)
+ * that should be applied to the current state to produce the new state.
+ * 
+ * @param delta JSON Patch operations array as defined in RFC 6902
+ * @param timestamp Optional timestamp when the delta was created
+ * @param rawEvent Optional raw JSON representation of the event
+ * 
+ * @see <a href="https://tools.ietf.org/html/rfc6902">RFC 6902 - JSON Patch</a>
+ */
 @Serializable
 @SerialName("STATE_DELTA")
 data class StateDeltaEvent(
@@ -286,6 +479,17 @@ data class StateDeltaEvent(
     override val eventType: EventType = EventType.STATE_DELTA
 }
 
+/**
+ * Event containing a complete snapshot of the conversation messages.
+ * 
+ * This event provides a full replacement of the current message history.
+ * It's used when the agent wants to modify the conversation history
+ * or when a complete refresh is more efficient than incremental updates.
+ * 
+ * @param messages The complete list of messages in the conversation
+ * @param timestamp Optional timestamp when the snapshot was created
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("MESSAGES_SNAPSHOT")
 data class MessagesSnapshotEvent(
@@ -299,6 +503,19 @@ data class MessagesSnapshotEvent(
 
 // ============== Special Events (2) ==============
 
+/**
+ * Event containing raw, unprocessed event data.
+ * 
+ * This event type is used to pass through events that don't fit into
+ * the standard event categories or for debugging purposes. The event
+ * field contains the original JSON structure, and source provides
+ * optional information about where the event originated.
+ * 
+ * @param event The raw JSON event data
+ * @param source Optional identifier for the event source
+ * @param timestamp Optional timestamp when the event was created
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("RAW")
 data class RawEvent(
@@ -311,6 +528,24 @@ data class RawEvent(
     override val eventType: EventType = EventType.RAW
 }
 
+/**
+ * Event for custom, application-specific event types.
+ * 
+ * This event type allows agents to send custom events that extend
+ * the standard protocol. The name field identifies the custom event type,
+ * and value contains the event-specific data.
+ * 
+ * Examples of custom events:
+ * - Progress indicators
+ * - Debug information
+ * - Application-specific notifications
+ * - Extension protocol events
+ * 
+ * @param name The name/type of the custom event
+ * @param value The custom event data as JSON
+ * @param timestamp Optional timestamp when the event was created
+ * @param rawEvent Optional raw JSON representation of the event
+ */
 @Serializable
 @SerialName("CUSTOM")
 data class CustomEvent(
