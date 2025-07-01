@@ -24,7 +24,7 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "com.contextable.agui4k.example.client.MainKt"
+        mainClass = "com.contextable.agui4k.example.chatapp.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
