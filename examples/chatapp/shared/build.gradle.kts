@@ -28,6 +28,17 @@ kotlin {
         }
     }
 
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "shared"
+            isStatic = true
+        }
+    }
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -49,6 +60,9 @@ kotlin {
 
                 // Coroutines
                 implementation(libs.kotlinx.coroutines.core)
+
+                // Atomics for multiplatform thread safety
+                implementation("org.jetbrains.kotlinx:atomicfu:0.23.2")
 
                 // Serialization
                 implementation(libs.kotlinx.serialization.json)
@@ -123,6 +137,31 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
             }
+        }
+
+        // Get the existing specific iOS targets
+        val iosX64Main by getting
+        val iosArm64Main by getting
+        val iosSimulatorArm64Main by getting
+
+        // Create an iosMain source set and link the others to it
+        val iosMain by creating {
+            dependsOn(commonMain)
+            iosX64Main.dependsOn(this)
+            iosArm64Main.dependsOn(this)
+            iosSimulatorArm64Main.dependsOn(this)
+        }
+
+        // Also create iosTest
+        val iosX64Test by getting
+        val iosArm64Test by getting
+        val iosSimulatorArm64Test by getting
+
+        val iosTest by creating {
+            dependsOn(commonTest)
+            iosX64Test.dependsOn(this)
+            iosArm64Test.dependsOn(this)
+            iosSimulatorArm64Test.dependsOn(this)
         }
     }
 }

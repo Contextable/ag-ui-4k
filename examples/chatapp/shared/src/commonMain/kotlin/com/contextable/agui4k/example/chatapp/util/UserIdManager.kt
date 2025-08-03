@@ -26,6 +26,7 @@ package com.contextable.agui4k.example.chatapp.util
 import com.russhwolf.settings.Settings
 import kotlinx.datetime.Clock
 import kotlin.random.Random
+import kotlinx.atomicfu.atomic
 
 /**
  * Manages persistent user IDs across app sessions and agent switches.
@@ -37,12 +38,16 @@ class UserIdManager(private val settings: Settings) {
         private const val USER_ID_KEY = "persistent_user_id"
         private const val USER_ID_PREFIX = "user"
         
-        @Volatile
-        private var instance: UserIdManager? = null
+        private val instance = atomic<UserIdManager?>(null)
         
         fun getInstance(settings: Settings): UserIdManager {
-            return instance ?: synchronized(this) {
-                instance ?: UserIdManager(settings).also { instance = it }
+            return instance.value ?: run {
+                val newInstance = UserIdManager(settings)
+                if (instance.compareAndSet(null, newInstance)) {
+                    newInstance
+                } else {
+                    instance.value!!
+                }
             }
         }
     }

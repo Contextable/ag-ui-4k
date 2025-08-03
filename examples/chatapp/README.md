@@ -24,29 +24,29 @@ The client follows a clean architecture pattern:
 
 ### Prerequisites
 
-- JDK 11 or higher (JDK 21 recommended)
+- JDK 21 or higher (required for building)
 - Android Studio or IntelliJ IDEA with Compose Multiplatform plugin
 - Xcode 14+ (for iOS development)
-- Kotlin 2.1.21 or higher
+- Kotlin 2.2.0 or higher
 
 ### Running the Client
 
 #### Android
 ```bash
-cd client
 ./gradlew :androidApp:installDebug
 ```
 
 #### Desktop (JVM)
 ```bash
-cd client
 ./gradlew :desktopApp:run
 ```
 
 #### iOS
-1. Open `chatApp/iosApp` in Xcode
-2. Select your target device
-3. Build and run
+1. Open `chatapp/iosApp/iosApp.xcodeproj` in Xcode
+2. Select your target device or simulator
+3. Build and run (⌘+R)
+
+**Note**: The iOS app requires the Kotlin framework to be built first. This happens automatically when building through Xcode.
 
 ## Usage
 
@@ -135,18 +135,18 @@ Agent configurations are stored using platform-specific preferences:
 
 ### Android
 ```bash
-cd client
 ./gradlew :androidApp:assembleRelease
 ```
 
 ### Desktop
 ```bash
-cd client
 ./gradlew :desktopApp:packageDistributionForCurrentOS
 ```
 
 ### iOS
-Build through Xcode with your provisioning profiles.
+1. Set up your development team in Xcode project settings
+2. Configure code signing and provisioning profiles
+3. Archive and distribute through Xcode (Product → Archive)
 
 ## Troubleshooting
 
