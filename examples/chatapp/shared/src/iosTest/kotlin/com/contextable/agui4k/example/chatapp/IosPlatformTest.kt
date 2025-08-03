@@ -21,42 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.contextable.agui4k.example.chatapp.data.model
+package com.contextable.agui4k.example.chatapp
 
-import kotlinx.serialization.Serializable
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import com.contextable.agui4k.example.chatapp.util.getPlatformName
+import com.contextable.agui4k.example.chatapp.util.getPlatformSettings
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
-/**
- * Represents a configured agent that the user can connect to.
- */
-@Serializable
-data class AgentConfig(
-    val id: String,
-    val name: String,
-    val url: String,
-    val description: String? = null,
-    val authMethod: AuthMethod = AuthMethod.None(),
-    val isActive: Boolean = false,
-    val createdAt: Instant = Clock.System.now(),
-    val lastUsedAt: Instant? = null,
-    val customHeaders: Map<String, String> = emptyMap()
-) {
-    companion object {
-        fun generateId(): String {
-            val timestamp = Clock.System.now().toEpochMilliseconds()
-            val random = kotlin.random.Random.nextInt(1000, 9999)
-            return "agent_${timestamp}_${random}"
-        }
+class IosPlatformTest {
+    
+    @Test
+    fun testPlatformName() {
+        assertEquals("iOS", getPlatformName())
+    }
+    
+    @Test
+    fun testPlatformSettings() {
+        val settings = getPlatformSettings()
+        assertNotNull(settings)
+        
+        // Test that we can write and read a value
+        val testKey = "test_key"
+        val testValue = "test_value"
+        
+        settings.putString(testKey, testValue)
+        assertEquals(testValue, settings.getString(testKey, ""))
+        
+        // Clean up
+        settings.remove(testKey)
     }
 }
-
-/**
- * Represents the current chat session state.
- */
-@Serializable
-data class ChatSession(
-    val agentId: String,
-    val threadId: String,
-    val startedAt: Instant = Clock.System.now()
-)

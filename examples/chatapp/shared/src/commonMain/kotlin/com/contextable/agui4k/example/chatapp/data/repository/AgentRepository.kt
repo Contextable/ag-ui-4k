@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
-import org.jetbrains.annotations.TestOnly
+import kotlinx.atomicfu.atomic
 
 class AgentRepository private constructor(
     private val settings: Settings
@@ -140,20 +140,21 @@ class AgentRepository private constructor(
         private const val KEY_AGENTS = "agents"
         private const val KEY_ACTIVE_AGENT = "active_agent"
 
-        @Volatile
-        private var INSTANCE: AgentRepository? = null
+        private val INSTANCE = atomic<AgentRepository?>(null)
 
         fun getInstance(settings: Settings): AgentRepository {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: AgentRepository(settings).also { INSTANCE = it }
+            return INSTANCE.value ?: run {
+                val newInstance = AgentRepository(settings)
+                if (INSTANCE.compareAndSet(null, newInstance)) {
+                    newInstance
+                } else {
+                    INSTANCE.value!!
+                }
             }
         }
 
-        @TestOnly
         fun resetInstance() {
-            synchronized(this) {
-                INSTANCE = null
-            }
+            INSTANCE.value = null
         }
     }
 }

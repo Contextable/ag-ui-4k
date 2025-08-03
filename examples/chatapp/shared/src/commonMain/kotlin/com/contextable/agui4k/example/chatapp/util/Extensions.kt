@@ -52,7 +52,7 @@ fun Long.formatFileSize(): String {
         unitIndex++
     }
 
-    return "%.1f %s".format(size, units[unitIndex])
+    return "${(size * 10).toInt() / 10.0} ${units[unitIndex]}"
 }
 
 /**
