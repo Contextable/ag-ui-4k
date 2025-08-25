@@ -1,6 +1,8 @@
 AG-UI-4K_README.md
 # AG-UI-4K - Agent User Interaction Protocol Client for Kotlin
 
+**Note: This repo is now archived. It is in the proecess kf being migrated to the main AG-UI repo at https://github.com/ag-ui-protocol/ag-ui/pull/316**
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.1.21-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20JVM-lightgrey)](https://kotlinlang.org/docs/multiplatform.html)
